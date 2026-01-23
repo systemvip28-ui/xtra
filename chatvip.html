@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Chat Komunitas</title>
+
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
+<style>
+*{box-sizing:border-box}
+html,body{
+  margin:0;height:100%;
+  font-family:system-ui;
+  background:#0f1419;
+  color:#eaeaea;
+  overflow:hidden
+}
+.app{width:100vw;height:100vh}
+
+/* SCREEN */
+.screen{
+  position:absolute;inset:0;
+  background:#0f1419;
+  padding:20px;
+  display:flex;
+  flex-direction:column;
+  transform:translateX(100%);
+  transition:.3s ease
+}
+.screen.active{transform:translateX(0)}
+
+h3{text-align:center}
+
+/* FORM */
+input,select,button{
+  width:100%;
+  padding:14px;
+  border-radius:14px;
+  border:1px solid #2a2f36;
+  background:#1c2229;
+  color:#fff;
+  font-size:16px;
+  margin-top:12px
+}
+button{
+  background:#075e54;
+  border:none;
+  font-weight:600
+}
+
+/* PHOTO */
+.photo-box{
+  width:110px;height:110px;
+  border-radius:50%;
+  background:#1c2229;
+  margin:10px auto;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+  border:2px dashed #2a2f36
+}
+.photo-box img{
+  width:100%;height:100%;
+  object-fit:cover
+}
+.photo-box i{
+  font-size:32px;
+  color:#777
+}
+
+/* CHAT */
+.chat{display:flex;flex-direction:column;height:100vh}
+.header{
+  height:56px;
+  background:#1f2c34;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:0 14px;
+  font-weight:600
+}
+.messages{
+  flex:1;
+  padding:10px;
+  overflow-y:auto;
+  background:#0f1419
+}
+.msg{
+  max-width:75%;
+  padding:10px;
+  border-radius:12px;
+  margin:6px 0;
+  word-wrap:break-word
+}
+.left{background:#1c2229}
+.right{background:#075e54;margin-left:auto}
+.time{
+  font-size:11px;
+  opacity:.7;
+  text-align:right;
+  margin-top:4px
+}
+
+/* INPUT */
+.input{
+  height:60px;
+  display:flex;
+  gap:8px;
+  padding:8px;
+  background:#1f2c34
+}
+.input input{
+  flex:1;
+  margin:0
+}
+.input button{
+  width:60px
+}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+<!-- LANDING -->
+<div class="screen active" id="landing">
+  <h3>💬 Chat Komunitas</h3>
+  <button onclick="go('profile')">Mulai</button>
+</div>
+
+<!-- PROFILE -->
+<div class="screen" id="profile">
+  <h3>Profil</h3>
+
+  <div class="photo-box" onclick="photoInput.click()">
+    <i class="bi bi-person-fill" id="photoIcon"></i>
+    <img id="photoPreview" hidden>
+  </div>
+
+  <input type="file" id="photoInput" hidden accept="image/*">
+
+  <input id="username" placeholder="Nama">
+
+  <select id="age">
+    <option value="">Pilih Umur</option>
+    <option>18</option><option>19</option><option>20</option>
+    <option>21</option><option>22</option><option>23</option>
+    <option>24</option><option>25</option><option>30+</option>
+  </select>
+
+  <select id="gender">
+    <option value="">Pilih Gender</option>
+    <option>Laki-laki</option>
+    <option>Perempuan</option>
+  </select>
+
+  <select id="job">
+    <option value="">Status Pekerjaan</option>
+    <option>Kerja</option>
+    <option>Sekolah</option>
+    <option>Pengangguran</option>
+  </select>
+
+  <select id="server">
+    <option value="">Pilih Server</option>
+    <option value="server1">Server 1 (Ramai)</option>
+    <option value="server2">Server 2</option>
+    <option value="server3">Server 3</option>
+  </select>
+
+  <button onclick="start()">Izinkan Lokasi & Mulai Chat</button>
+</div>
+
+<!-- CHAT -->
+<div class="screen" id="chat">
+  <div class="chat">
+    <div class="header">
+      <span id="status">Menghubungkan...</span>
+      <i class="bi bi-geo-alt"></i>
+    </div>
+
+    <div class="messages" id="messages"></div>
+
+    <div class="input">
+      <input id="input" placeholder="Ketik pesan..." disabled
+        onkeydown="if(event.key==='Enter')send()">
+      <button onclick="send()">
+        <i class="bi bi-send-fill"></i>
+      </button>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script>
+const socket = io("https://chat-jsb8.onrender.com");
+
+let current="landing";
+let photo="";
+let locationText="";
+
+/* NAV */
+function go(id){
+  document.getElementById(current).classList.remove("active");
+  document.getElementById(id).classList.add("active");
+  current=id;
+}
+
+/* PHOTO */
+photoInput.onchange = e => {
+  const file = e.target.files[0];
+  if(!file) return;
+  const r = new FileReader();
+  r.onload = () => {
+    photo = r.result;
+    photoPreview.src = photo;
+    photoPreview.hidden = false;
+    photoIcon.style.display = "none";
+  };
+  r.readAsDataURL(file);
+};
+
+/* LOCATION */
+function requestLocation(cb){
+  if(!navigator.geolocation){
+    alert("Browser tidak mendukung lokasi");
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(
+    p=>{
+      locationText =
+        p.coords.latitude.toFixed(4)+","+
+        p.coords.longitude.toFixed(4);
+      cb();
+    },
+    ()=>{
+      alert("Izin lokasi wajib untuk mulai chat");
+    }
+  );
+}
+
+/* START */
+function start(){
+  if(
+    !username.value ||
+    !age.value ||
+    !gender.value ||
+    !job.value ||
+    !server.value
+  ){
+    alert("Lengkapi semua data");
+    return;
+  }
+
+  requestLocation(()=>{
+    go("chat");
+    socket.emit("join",{
+      name: username.value,
+      age: age.value,
+      gender: gender.value,
+      job: job.value,
+      server: server.value,
+      photo: photo,
+      location: locationText
+    });
+  });
+}
+
+/* SOCKET */
+socket.on("matched",p=>{
+  status.innerText = "Server: " + p.server;
+  input.disabled = false;
+});
+
+socket.on("message",d=>{
+  add(d.text,"left",d.time);
+});
+
+/* CHAT */
+function send(){
+  if(!input.value) return;
+  socket.emit("message",input.value);
+  add(input.value,"right",time());
+  input.value="";
+}
+
+function add(text,side,timeStr){
+  const d=document.createElement("div");
+  d.className="msg "+side;
+  d.innerHTML = text + `<div class="time">${timeStr}</div>`;
+  messages.appendChild(d);
+  messages.scrollTop = messages.scrollHeight;
+}
+
+function time(){
+  const d=new Date();
+  return d.getHours().toString().padStart(2,"0")+":"+
+         d.getMinutes().toString().padStart(2,"0");
+}
+</script>
+
+</body>
+</html>
