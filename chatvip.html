@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Chat Komunitas</title>
+
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;font-family:system-ui;background:#ece5dd}
+.app{position:relative;width:100%;height:100vh}
+
+/* SCREEN */
+.screen{
+  position:absolute;inset:0;
+  background:#fff;
+  padding:20px;
+  display:flex;
+  flex-direction:column;
+  transform:translateX(100%);
+  transition:.35s ease
+}
+.screen.active{transform:translateX(0)}
+.screen.prev{transform:translateX(-100%)}
+
+.center{flex:1;display:flex;flex-direction:column;justify-content:center;text-align:center}
+
+/* FORM */
+input,button{
+  width:100%;
+  padding:14px;
+  border-radius:14px;
+  border:1px solid #ccc;
+  font-size:16px;
+  margin-top:12px
+}
+button{background:#075e54;color:#fff;border:none}
+.icon-btn{display:flex;align-items:center;justify-content:center;gap:10px}
+
+/* PHOTO */
+.photo{
+  width:100px;height:100px;border-radius:50%;
+  background:#ddd;margin:10px auto;
+  display:flex;align-items:center;justify-content:center;
+  overflow:hidden
+}
+.photo img{width:100%;height:100%;object-fit:cover}
+
+/* CHAT */
+.chat{display:flex;flex-direction:column;height:100%}
+.header{
+  background:#075e54;color:#fff;
+  padding:14px;display:flex;justify-content:space-between;align-items:center
+}
+.messages{
+  flex:1;padding:10px;
+  overflow-y:auto;background:#ece5dd
+}
+.msg{
+  max-width:75%;padding:10px;
+  border-radius:10px;margin:6px 0
+}
+.left{background:#fff}
+.right{background:#dcf8c6;margin-left:auto}
+.time{font-size:11px;color:#555;text-align:right}
+.input{
+  display:flex;padding:10px;background:#f0f0f0
+}
+.input input{flex:1}
+.input button{width:auto}
+
+/* MODAL */
+.modal{
+  position:fixed;inset:0;
+  background:rgba(0,0,0,.6);
+  display:none;align-items:center;justify-content:center
+}
+.modal-box{
+  background:#fff;width:85%;
+  padding:16px;border-radius:16px;
+  text-align:center
+}
+.modal-box button{margin-top:10px}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+<!-- LANDING -->
+<div class="screen active" id="landing">
+  <div class="center">
+    <h2>💬 Chat Komunitas</h2>
+    <p>Temukan teman ngobrol baru</p>
+    <button class="icon-btn" onclick="go('profile')">
+      <i class="bi bi-chat-dots"></i> Mulai Chat
+    </button>
+  </div>
+</div>
+
+<!-- PROFILE -->
+<div class="screen" id="profile">
+  <h3 align="center">Profil</h3>
+
+  <div class="photo" onclick="photoInput.click()">
+    <i class="bi bi-camera" id="photoIcon"></i>
+    <img id="photoPreview" hidden>
+  </div>
+  <small align="center" style="color:#666">Ketuk untuk ambil foto</small>
+
+  <input type="file" id="photoInput" hidden accept="image/*" capture="environment">
+
+  <!-- FIX: GANTI ID -->
+  <input id="username" placeholder="Nama">
+
+  <button id="ageBtn" onclick="openAge()" class="icon-btn">
+    <i class="bi bi-calendar"></i> Pilih Umur
+  </button>
+
+  <button id="genderBtn" onclick="openGender()" class="icon-btn">
+    <i class="bi bi-gender-ambiguous"></i> Pilih Gender
+  </button>
+
+  <button id="jobBtn" onclick="openJob()" class="icon-btn">
+    <i class="bi bi-briefcase"></i> Pilih Status
+  </button>
+
+  <button onclick="validateStart()" class="icon-btn">
+    <i class="bi bi-play-circle"></i> Mulai
+  </button>
+</div>
+
+<!-- CHAT -->
+<div class="screen" id="chat">
+  <div class="chat">
+    <div class="header">
+      <span id="status">Mencari partner...</span>
+      <i class="bi bi-info-circle" onclick="openProfile()"></i>
+    </div>
+
+    <div class="messages" id="messages"></div>
+
+    <div class="input">
+      <input id="input" placeholder="Ketik pesan..." disabled
+        onkeydown="if(event.key==='Enter')send()">
+      <button onclick="send()"><i class="bi bi-send"></i></button>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<!-- MODALS -->
+<div class="modal" id="ageModal">
+  <div class="modal-box">
+    <h4>Pilih Umur</h4>
+    <button onclick="setAge(18)">18</button>
+    <button onclick="setAge(19)">19</button>
+    <button onclick="setAge(20)">20</button>
+    <button onclick="setAge(21)">21</button>
+    <button onclick="setAge(22)">22</button>
+    <button onclick="setAge(23)">23</button>
+    <button onclick="setAge(24)">24</button>
+    <button onclick="setAge(25)">25</button>
+    <button onclick="setAge('30+')">30+</button>
+  </div>
+</div>
+
+<div class="modal" id="genderModal">
+  <div class="modal-box">
+    <button onclick="setGender('male')">Laki-laki</button>
+    <button onclick="setGender('female')">Perempuan</button>
+  </div>
+</div>
+
+<div class="modal" id="jobModal">
+  <div class="modal-box">
+    <button onclick="setJob('Kerja')">Kerja</button>
+    <button onclick="setJob('Sekolah')">Sekolah</button>
+    <button onclick="setJob('Pengangguran')">Pengangguran</button>
+  </div>
+</div>
+
+<div class="modal" id="alertModal">
+  <div class="modal-box">
+    <p>Lengkapi data terlebih dahulu</p>
+    <button onclick="alertModal.style.display='none'">OK</button>
+  </div>
+</div>
+
+<div class="modal" id="profileModal">
+  <div class="modal-box">
+    <img id="pPhoto" style="width:80px;height:80px;border-radius:50%">
+    <h4 id="pName"></h4>
+    <p id="pAge"></p>
+    <p id="pGender"></p>
+    <p id="pJob"></p>
+    <button onclick="profileModal.style.display='none'">Tutup</button>
+  </div>
+</div>
+
+<script>
+/* SOCKET */
+const socket = io("https://chat-jsb8.onrender.com");
+
+/* STATE */
+let age="", gender="", job="", photo="", partner=null;
+let current="landing";
+
+/* ELEMENT */
+const username = document.getElementById("username");
+const input = document.getElementById("input");
+const messages = document.getElementById("messages");
+
+/* NAV */
+function go(id){
+  document.getElementById(current).classList.remove("active");
+  document.getElementById(current).classList.add("prev");
+  document.getElementById(id).classList.add("active");
+  current=id;
+}
+
+/* PHOTO */
+photoInput.onchange=e=>{
+  const r=new FileReader();
+  r.onload=()=>{
+    photo=r.result;
+    photoPreview.src=photo;
+    photoPreview.hidden=false;
+    photoIcon.style.display="none";
+  };
+  r.readAsDataURL(e.target.files[0]);
+};
+
+/* AGE */
+function openAge(){ageModal.style.display="flex"}
+function setAge(a){
+  age=a;
+  ageBtn.innerHTML=`<i class="bi bi-calendar"></i> Umur: ${a}`;
+  ageModal.style.display="none";
+}
+
+/* GENDER */
+function openGender(){genderModal.style.display="flex"}
+function setGender(g){
+  gender=g;
+  genderBtn.innerHTML=
+    g==="male"
+    ? `<i class="bi bi-gender-male"></i> Laki-laki`
+    : `<i class="bi bi-gender-female"></i> Perempuan`;
+  genderModal.style.display="none";
+}
+
+/* JOB */
+function openJob(){jobModal.style.display="flex"}
+function setJob(j){
+  job=j;
+  let icon="bi-house";
+  if(j==="Kerja") icon="bi-briefcase";
+  if(j==="Sekolah") icon="bi-mortarboard";
+  jobBtn.innerHTML=`<i class="bi ${icon}"></i> ${j}`;
+  jobModal.style.display="none";
+}
+
+/* START */
+function validateStart(){
+  if(!username.value || !age || !gender || !job){
+    alertModal.style.display="flex";
+    return;
+  }
+  go("chat");
+  socket.emit("join",{
+    name: username.value,
+    age, gender, job, photo
+  });
+}
+
+/* SOCKET EVENT */
+socket.on("matched",p=>{
+  partner=p;
+  status.innerText="Chat dengan "+p.name;
+  input.disabled=false;
+});
+
+socket.on("message",d=>{
+  add(d.text,"left",d.time);
+});
+
+/* CHAT */
+function send(){
+  if(!input.value) return;
+  socket.emit("message",input.value);
+  add(input.value,"right",time());
+  input.value="";
+}
+
+function add(text,side,timeStr){
+  const d=document.createElement("div");
+  d.className="msg "+side;
+  d.innerHTML=`${text}<div class="time">${timeStr}</div>`;
+  messages.appendChild(d);
+  messages.scrollTop=messages.scrollHeight;
+}
+
+function time(){
+  const d=new Date();
+  return d.getHours().toString().padStart(2,"0")+":"+
+         d.getMinutes().toString().padStart(2,"0");
+}
+
+/* PROFILE */
+function openProfile(){
+  if(!partner) return;
+  pPhoto.src=partner.photo||"";
+  pName.innerText=partner.name;
+  pAge.innerText="Umur: "+partner.age;
+  pGender.innerText="Gender: "+partner.gender;
+  pJob.innerText="Status: "+partner.job;
+  profileModal.style.display="flex";
+}
+</script>
+
+</body>
+</html>
