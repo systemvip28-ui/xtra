@@ -29,18 +29,29 @@ input,select,button{
 input,select{background:#0b141a;color:#fff}
 button{background:var(--accent);color:#fff;font-weight:600}
 
-/* CHAT */
+#searching{
+  display:none;
+  flex-direction:column;
+  align-items:center;
+  gap:12px;
+}
+.loader{
+  width:36px;height:36px;
+  border:4px solid #2a3942;
+  border-top-color:var(--accent);
+  border-radius:50%;
+  animation:spin 1s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
 #chat{display:none;height:100%;flex-direction:column}
 .header{
   height:56px;background:var(--card);
   display:flex;align-items:center;justify-content:space-between;
   padding:0 14px;
 }
-.title{display:flex;flex-direction:column}
-#typing{font-size:12px;opacity:.6}
 .icons i{font-size:20px;margin-left:14px;cursor:pointer}
 
-/* MESSAGES */
 #messages{flex:1;padding:12px;overflow-y:auto}
 .msg{max-width:78%;margin-bottom:8px;font-size:14px}
 .me{margin-left:auto}
@@ -48,14 +59,11 @@ button{background:var(--accent);color:#fff;font-weight:600}
 .me .bubble{background:var(--me);border-top-right-radius:0}
 .other .bubble{background:var(--other);border-top-left-radius:0}
 .time{font-size:10px;opacity:.5;text-align:right;margin-top:2px}
-
-/* FOOTER */
 .footer{padding:8px;background:var(--card);display:flex;gap:6px}
 .footer input{flex:1;border-radius:20px}
 .footer button{width:44px;border-radius:50%}
 
-/* INFO MODAL */
-#infoModal{
+#profileModal{
   position:fixed;inset:0;
   background:rgba(0,0,0,.6);
   display:none;
@@ -63,60 +71,144 @@ button{background:var(--accent);color:#fff;font-weight:600}
   align-items:center;
   z-index:9
 }
-#infoBox{
+#profileBox{
   background:#202c33;
   width:90%;
   max-width:320px;
   padding:20px;
   border-radius:16px
 }
+.login-header{
+  text-align:center;
+  animation:fadeUp .6s ease;
+}
+
+.login-header .logo{
+  font-size:40px;
+  margin-bottom:6px;
+}
+
+.login-header h1{
+  margin:0;
+  font-size:22px;
+  font-weight:700;
+}
+
+.login-header p{
+  margin:4px 0 16px;
+  font-size:13px;
+  opacity:.7;
+}
+
+.start-btn{
+  width:160px;
+  margin:0 auto;
+  border-radius:30px;
+}
+
+.card{
+  margin-top:20px;
+  animation:slideUp .4s ease;
+}
+
+.hidden{
+  display:none;
+}
+
+.age-wrap{
+  display:flex;
+  justify-content:space-between;
+  font-size:13px;
+  opacity:.8;
+  margin-bottom:4px;
+}
+
+@keyframes fadeUp{
+  from{opacity:0;transform:translateY(12px)}
+  to{opacity:1;transform:translateY(0)}
+}
+
+@keyframes slideUp{
+  from{opacity:0;transform:translateY(20px)}
+  to{opacity:1;transform:translateY(0)}
+}
+.card-header{
+  text-align:center;
+  margin-bottom:14px;
+}
+.card-header h2{
+  margin:0;
+  font-size:18px;
+  font-weight:700;
+}
+.card-header p{
+  margin:4px 0 0;
+  font-size:12px;
+  opacity:.7;
+}
+
 </style>
-</head>
 
-<body>
-
-<!-- LOGIN -->
 <div class="screen" id="login">
-  <div class="card">
-    <input id="username" placeholder="Nama">
+  <div class="login-header" id="loginHeader">
+    <div class="logo">💬</div>
+    <h1>Chat Komunitas</h1>
+    <p>Ngobrol random dengan orang baru</p>
 
-    Umur: <span id="ageVal">21</span>
-    <input id="age" type="range" min="16" max="30" value="21"
-      oninput="ageVal.innerText=this.value">
+    <button class="start-btn" onclick="showForm()">
+      Mulai
+    </button>
+  </div>
 
-    <select id="gender">
-      <option value="">Gender</option>
-      <option>Laki-laki</option>
-      <option>Perempuan</option>
-    </select>
+<div class="card hidden" id="loginForm">
+  <div class="card-header">
+    <h2>Sanz Project</h2>
+    <p>Isi data singkat sebelum mulai chat</p>
+  </div>
 
-    <select id="job">
-      <option value="">Pekerjaan</option>
-      <option>Sekolah</option>
-      <option>Kerja</option>
-      <option>Pengangguran</option>
-    </select>
+  <input id="name" placeholder="Nama">
 
-    <!-- SERVER -->
-    <select id="server">
-      <option value="server1">Server 1</option>
-      <option value="server2">Server 2</option>
-      <option value="server3">Server 3</option>
-    </select>
+  <div class="age-wrap">
+    <span>Umur</span>
+    <span id="ageVal">21</span>
+  </div>
+  <input id="age" type="range" min="16" max="30" value="21"
+    oninput="ageVal.innerText=this.value">
 
-    <button onclick="start()">Mulai Chat</button>
+  <select id="gender">
+    <option value="" disabled selected>Gender</option>
+    <option>Laki-laki</option>
+    <option>Perempuan</option>
+  </select>
+
+  <select id="job">
+    <option value="" disabled selected>Status</option>
+    <option>Sekolah</option>
+    <option>Kerja</option>
+    <option>Pengangguran</option>
+  </select>
+
+  <select id="server">
+    <option value="server1">Server 1</option>
+    <option value="server2">Server 2</option>
+    <option value="server3">Server 3</option>
+  </select>
+
+  <button onclick="start()">Masuk Chat</button>
+  
   </div>
 </div>
 
-<!-- CHAT -->
+<div class="screen" id="searching">
+  <div class="loader"></div>
+  <div>Mencari partner...</div>
+</div>
+
 <div id="chat">
   <div class="header">
-    <div class="title">
-      <div id="status">Menghubungkan...</div>
-      <div id="typing"></div>
-    </div>
+    <div id="partnerName">Chat</div>
     <div class="icons">
-      <i class="bi bi-info-circle" onclick="openInfo()"></i>
+      <i class="bi bi-person-circle" onclick="openProfile()"></i>
       <i class="bi bi-box-arrow-right" onclick="logout()"></i>
     </div>
   </div>
@@ -124,76 +216,74 @@ button{background:var(--accent);color:#fff;font-weight:600}
   <div id="messages"></div>
 
   <div class="footer">
-    <input id="text" placeholder="Pesan..."
-      onkeydown="if(event.key==='Enter')sendText()">
-    <button onclick="sendText()">➤</button>
+    <input id="msg" placeholder="Pesan..."
+      onkeydown="if(event.key==='Enter')sendMessage()">
+    <button onclick="sendMessage()">➤</button>
   </div>
 </div>
 
-<!-- INFO -->
-<div id="infoModal">
-  <div id="infoBox">
-    <h3>Info Partner</h3>
-    <div id="infoContent"></div>
-    <button onclick="closeInfo()">Tutup</button>
+<div id="profileModal">
+  <div id="profileBox">
+    <h3>Profil Partner</h3>
+    <div id="profileContent"></div>
+    <br>
+    <button onclick="closeProfile()">Tutup</button>
   </div>
 </div>
 
 <script>
-const socket = io("https://chat-jsb8.onrender.com",{reconnection:true});
+const socket = io("https://chat-jsb8.onrender.com");
+let partner = null;
 
-let partner=null;
-
-/* START */
 function start(){
-  const user={
-    name:username.value||"Anonim",
+  socket.emit("join",{
+    name:name.value || "Anonim",
     age:age.value,
     gender:gender.value,
     job:job.value,
     server:server.value
-  };
-  socket.emit("join",user);
+  });
   login.style.display="none";
-  chat.style.display="flex";
-  status.innerText="Menghubungkan...";
+  searching.style.display="flex";
 }
 
-/* MATCH */
+function showForm(){
+  document.getElementById("loginHeader").style.display = "none";
+  document.getElementById("loginForm").classList.remove("hidden");
+}
+
 socket.on("matched",p=>{
   partner=p;
+  searching.style.display="none";
+  chat.style.display="flex";
   messages.innerHTML="";
-  status.innerText="Chat dengan "+p.name;
+  partnerName.innerText=p.name;
 });
 
-/* MESSAGE (SERVER KIRIM STRING) */
 socket.on("message",m=>{
   addMsg(m.text,"other",m.time);
 });
 
-/* SEND TEXT (KIRIM STRING) */
-function sendText(){
-  if(!text.value||!partner)return;
-  socket.emit("message", text.value);
-  addMsg(text.value,"me",timeNow());
-  text.value="";
+function sendMessage(){
+  if(!msg.value||!partner)return;
+  socket.emit("message",msg.value);
+  addMsg(msg.value,"me",timeNow());
+  msg.value="";
 }
 
-/* INFO */
-function openInfo(){
-  if(!partner)return alert("Belum ada partner");
-  infoContent.innerHTML=`
+function openProfile(){
+  if(!partner)return;
+  profileContent.innerHTML=`
     <b>Nama:</b> ${partner.name}<br>
     <b>Umur:</b> ${partner.age}<br>
     <b>Gender:</b> ${partner.gender||"-"}<br>
-    <b>Pekerjaan:</b> ${partner.job||"-"}<br>
+    <b>Status:</b> ${partner.job||"-"}<br>
     <b>Server:</b> ${partner.server}
   `;
-  infoModal.style.display="flex";
+  profileModal.style.display="flex";
 }
-function closeInfo(){infoModal.style.display="none";}
+function closeProfile(){profileModal.style.display="none";}
 
-/* UI */
 function addMsg(t,s,ti){
   messages.innerHTML+=`
   <div class="msg ${s}">
@@ -209,6 +299,5 @@ function timeNow(){
 }
 function logout(){location.reload();}
 </script>
-
 </body>
 </html>
