@@ -2,224 +2,192 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Chat Komunitas</title>
 
 <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 
 <style>
-*{box-sizing:border-box;margin:0;padding:0;font-family:system-ui}
-html,body{
-  height:100%;
-  background:#0f1419;
-  overflow:hidden;
+:root{
+  --bg:#0f1419;
+  --card:#1c2229;
+  --accent:#1da1f2;
+  --bubble:#2a2f36;
 }
 
-/* ===== LOGIN ===== */
-#login{
-  height:100%;
-  padding:20px;
-  display:flex;
-  flex-direction:column;
-  gap:10px;
-}
-#login h3{color:#fff;margin-bottom:10px}
+*{box-sizing:border-box;font-family:system-ui}
+html,body{margin:0;height:100%;background:var(--bg);color:#fff}
 
-input,select,button{
-  width:100%;
-  padding:14px;
-  border-radius:14px;
-  border:none;
-  font-size:15px;
-}
-input,select{
-  background:#1c2229;
-  color:#fff;
-}
-button{
-  background:#1da1f2;
-  color:#fff;
-  font-weight:600;
-}
-
-/* ===== CHAT APP ===== */
-#chat{
-  display:none;
-  height:100%;
-  width:100%;
-  display:flex;
-  flex-direction:column;
-}
-
-/* HEADER */
-.header{
-  flex-shrink:0;
-  height:56px;
-  background:#1c2229;
-  color:#fff;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-weight:600;
-  font-size:16px;
-}
-
-/* MESSAGES */
-#messages{
-  flex:1;
-  padding:10px;
-  overflow-y:auto;
-  background:#0f1419;
-}
-
-/* MESSAGE */
-.msg{
-  max-width:75%;
-  padding:10px 12px;
-  border-radius:14px;
-  margin:6px 0;
-  font-size:14px;
-  line-height:1.4;
-  word-wrap:break-word;
-}
-.me{
-  background:#1da1f2;
-  margin-left:auto;
-}
-.other{
-  background:#2a2f36;
-}
-.time{
-  font-size:10px;
-  opacity:.6;
-  text-align:right;
-  margin-top:4px;
-}
-
-/* INPUT AREA (FIXED) */
-.footer{
-  flex-shrink:0;
-  display:flex;
-  align-items:center;
-  gap:8px;
-  padding:8px;
-  background:#1c2229;
-}
-.footer input{
-  flex:1;
-  padding:12px 14px;
-  border-radius:20px;
-}
-.footer button{
-  width:72px;
-  padding:12px 0;
-  border-radius:20px;
-}
-
-/* MODAL */
-.modal{
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,.6);
-  display:none;
-  align-items:center;
-  justify-content:center;
-  z-index:10;
-}
-.modal-box{
-  width:85%;
-  background:#1c2229;
-  border-radius:16px;
-  padding:20px;
+/* ===== SCREEN ===== */
+.screen{height:100%;display:flex;justify-content:center;align-items:center}
+.card{
+  width:90%;max-width:420px;
+  background:var(--card);
+  padding:24px;border-radius:20px;
   text-align:center;
-  color:#fff;
 }
-.modal-box img{
-  width:90px;
-  height:90px;
-  border-radius:50%;
-  object-fit:cover;
-  margin-bottom:10px;
+
+/* ===== FORM ===== */
+input,select,button{
+  width:100%;padding:14px;border-radius:14px;
+  border:none;margin-bottom:10px
 }
+input,select{background:#0f1419;color:#fff}
+button{background:var(--accent);color:#fff;font-weight:600}
+
+/* ===== STATUS ===== */
+.online{color:#1fdf64}
+.offline{color:#ff4d4d}
+
+/* ===== CHAT ===== */
+#chat{display:none;height:100%;flex-direction:column}
+.header{
+  height:56px;background:var(--card);
+  display:flex;flex-direction:column;
+  justify-content:center;align-items:center;
+}
+#status{font-weight:600}
+#partnerStatus{font-size:12px}
+
+#messages{flex:1;padding:12px;overflow-y:auto}
+.msg{
+  max-width:75%;padding:10px 14px;
+  border-radius:18px;margin-bottom:8px
+}
+.me{background:var(--accent);margin-left:auto}
+.other{background:var(--bubble)}
+.time{font-size:10px;opacity:.6;text-align:right}
+
+/* ===== FOOTER ===== */
+.footer{display:none;padding:10px;background:var(--card);gap:8px}
+.footer input{flex:1;border-radius:20px}
+.footer button{width:80px;border-radius:20px}
+
+/* ===== PARTNER MODAL ===== */
+.modal{
+  position:fixed;inset:0;
+  background:rgba(0,0,0,.6);
+  display:none;z-index:20
+}
+.modal-panel{
+  position:absolute;right:0;top:0;
+  width:80%;max-width:320px;height:100%;
+  background:var(--card);padding:20px;
+  animation:slide .25s ease
+}
+@keyframes slide{
+  from{transform:translateX(100%)}
+  to{transform:translateX(0)}
+}
+.modal-panel img{
+  width:90px;height:90px;border-radius:50%;
+  object-fit:cover;display:block;
+  margin:20px auto;cursor:pointer
+}
+.close{
+  position:absolute;top:10px;right:10px;
+  background:none;color:#fff;font-size:18px
+}
+
+/* ===== FULLSCREEN PHOTO ===== */
+#photoView{
+  position:fixed;inset:0;
+  background:#000;display:none;
+  justify-content:center;align-items:center;
+  z-index:30
+}
+#photoView img{max-width:100%;max-height:100%}
 </style>
 </head>
 
 <body>
 
 <!-- LOGIN -->
-<div id="login">
-  <h3>Masuk Chat</h3>
+<div class="screen" id="login">
+  <div class="card">
+    <h2>Mulai Chat</h2>
+    <input id="username" placeholder="Nama">
+    <input id="age" type="number" placeholder="Umur">
+    <select id="gender">
+      <option value="">Gender</option>
+      <option>Laki-laki</option>
+      <option>Perempuan</option>
+    </select>
+    <input id="job" placeholder="Pekerjaan">
+    <select id="server">
+      <option value="server1">Server 1</option>
+      <option value="server2">Server 2</option>
+      <option value="server3">Server 3</option>
+    </select>
+    <input type="file" id="photo" accept="image/*">
+    <button onclick="start()">Mulai Chat</button>
 
-  <input id="username" placeholder="Nama">
-  <input id="age" type="number" placeholder="Umur">
+    <p id="serverStatus" class="offline">🔴 Server Offline</p>
+  </div>
+</div>
 
-  <select id="gender">
-    <option value="">Pilih Gender</option>
-    <option>Laki-laki</option>
-    <option>Perempuan</option>
-  </select>
-
-  <input id="job" placeholder="Pekerjaan">
-
-  <select id="server">
-    <option value="server1">Server 1</option>
-    <option value="server2">Server 2</option>
-    <option value="server3">Server 3</option>
-  </select>
-
-  <input type="file" id="photo" accept="image/*">
-
-  <button onclick="start()">Mulai Chat</button>
+<!-- SEARCH -->
+<div class="screen" id="search" style="display:none">
+  <div class="card">
+    <h2>🔍 Mencari Partner...</h2>
+  </div>
 </div>
 
 <!-- CHAT -->
 <div id="chat">
-  <div class="header" onclick="openPartnerInfo()">
-    <span id="status">Menghubungkan...</span>
+  <div class="header" onclick="openPartner()">
+    <div id="status">Menghubungkan...</div>
+    <div id="partnerStatus" class="offline">● Offline</div>
   </div>
-
   <div id="messages"></div>
-
-  <div class="footer">
-    <input id="text" placeholder="Ketik pesan..." disabled
+  <div class="footer" id="footer">
+    <input id="text" placeholder="Ketik pesan..."
       onkeydown="if(event.key==='Enter')send()">
-    <button id="sendBtn" onclick="send()" disabled>Kirim</button>
+    <button onclick="send()">Kirim</button>
   </div>
 </div>
 
-<!-- INFO MODAL -->
-<div class="modal" id="partnerModal">
-  <div class="modal-box">
-    <img id="pPhoto">
-    <h4 id="pName"></h4>
+<!-- PARTNER INFO -->
+<div id="partnerModal" class="modal">
+  <div class="modal-panel">
+    <button class="close" onclick="closePartner()">✕</button>
+    <img id="pPhoto" onclick="openPhoto()">
+    <h3 id="pName"></h3>
     <p id="pAge"></p>
     <p id="pGender"></p>
     <p id="pJob"></p>
     <p id="pLocation"></p>
-    <button onclick="partnerModal.style.display='none'">Tutup</button>
   </div>
 </div>
 
-<script>
-const socket = io("https://chat-jsb8.onrender.com"); // GANTI
-let partner=null, locationText="";
+<!-- FULL PHOTO -->
+<div id="photoView" onclick="photoView.style.display='none'">
+  <img id="fullPhoto">
+</div>
 
-/* LOCATION */
-navigator.geolocation?.getCurrentPosition(p=>{
-  locationText = p.coords.latitude.toFixed(3)+","+p.coords.longitude.toFixed(3);
+<script>
+const socket = io("https://chat-jsb8.onrender.com");
+let partner=null;
+
+/* ===== SERVER STATUS ===== */
+socket.on("connect",()=>{
+  serverStatus.innerText="🟢 Server Online";
+  serverStatus.className="online";
+});
+socket.on("disconnect",()=>{
+  serverStatus.innerText="🔴 Server Offline";
+  serverStatus.className="offline";
 });
 
-/* START */
+/* ===== START ===== */
 function start(){
-  if(!username.value||!age.value||!gender.value||!job.value){
-    alert("Lengkapi data");
-    return;
-  }
+  if(!username.value||!age.value||!gender.value||!job.value)
+    return alert("Lengkapi data");
 
-  const reader = new FileReader();
-  reader.onload = ()=>{
+  const reader=new FileReader();
+  reader.onload=()=>{
     login.style.display="none";
-    chat.style.display="flex";
+    search.style.display="flex";
 
     socket.emit("join",{
       name:username.value,
@@ -228,31 +196,37 @@ function start(){
       job:job.value,
       server:server.value,
       photo:reader.result,
-      location:locationText
+      location:""
     });
   };
-  if(photo.files[0]) reader.readAsDataURL(photo.files[0]);
-  else reader.onload();
+  photo.files[0]?reader.readAsDataURL(photo.files[0]):reader.onload();
 }
 
-/* MATCH */
-socket.on("matched",p=>{
+/* ===== MATCH ===== */
+socket.on("matched", p=>{
   partner=p;
-  status.innerText=p.name;
-  text.disabled=false;
-  sendBtn.disabled=false;
+  search.style.display="none";
+  chat.style.display="flex";
+  footer.style.display="flex";
+
+  status.innerText="Chat dengan "+p.name;
+  partnerStatus.innerText="● Online";
+  partnerStatus.className="online";
 });
 
-/* MESSAGE */
-socket.on("message",m=>{
+/* ===== MESSAGE ===== */
+socket.on("message", m=>{
+  if(m.text.includes("keluar")){
+    partnerStatus.innerText="● Offline";
+    partnerStatus.className="offline";
+  }
   addMsg(m.text,"other",m.time);
 });
 
 function send(){
-  const msg=text.value.trim();
-  if(!msg)return;
-  socket.emit("message",msg);
-  addMsg(msg,"me",timeNow());
+  if(!text.value.trim())return;
+  socket.emit("message",text.value);
+  addMsg(text.value,"me",timeNow());
   text.value="";
 }
 
@@ -264,7 +238,8 @@ function addMsg(t,s,ti){
   messages.scrollTop=messages.scrollHeight;
 }
 
-function openPartnerInfo(){
+/* ===== PARTNER INFO ===== */
+function openPartner(){
   if(!partner)return;
   pPhoto.src=partner.photo||"";
   pName.innerText=partner.name;
@@ -272,12 +247,23 @@ function openPartnerInfo(){
   pGender.innerText="Gender: "+partner.gender;
   pJob.innerText="Pekerjaan: "+partner.job;
   pLocation.innerText="Lokasi: "+(partner.location||"-");
-  partnerModal.style.display="flex";
+  partnerModal.style.display="block";
+}
+function closePartner(){partnerModal.style.display="none"}
+partnerModal.onclick=e=>{
+  if(e.target===partnerModal)closePartner();
+}
+
+/* ===== FULL PHOTO ===== */
+function openPhoto(){
+  fullPhoto.src=partner.photo;
+  photoView.style.display="flex";
 }
 
 function timeNow(){
   const d=new Date();
-  return d.getHours().toString().padStart(2,"0")+":"+d.getMinutes().toString().padStart(2,"0");
+  return d.getHours().toString().padStart(2,"0")+":"+
+         d.getMinutes().toString().padStart(2,"0");
 }
 </script>
 
