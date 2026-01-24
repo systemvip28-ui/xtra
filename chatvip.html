@@ -146,6 +146,25 @@ button{background:var(--accent);color:#fff;font-weight:600}
   font-size:12px;
   opacity:.7;
 }
+#partnerStatus {
+  transition: color 0.3s;
+  font-style: italic;
+}
+
+.status-online {
+  color: #25D366; 
+  font-weight: bold;
+}
+
+.status-offline {
+  color: #FF5C5C; 
+  font-weight: bold;
+}
+
+.status-typing {
+  color: #FFD700;
+  font-weight: bold;
+}
 
 </style>
 
@@ -206,12 +225,15 @@ button{background:var(--accent);color:#fff;font-weight:600}
 
 <div id="chat">
   <div class="header">
+  <div>
     <div id="partnerName">Chat</div>
-    <div class="icons">
-      <i class="bi bi-person-circle" onclick="openProfile()"></i>
-      <i class="bi bi-box-arrow-right" onclick="logout()"></i>
-    </div>
+    <div id="partnerStatus" style="font-size:12px;opacity:0.6;height:14px;">Online</div>
   </div>
+  <div class="icons">
+    <i class="bi bi-person-circle" onclick="openProfile()"></i>
+    <i class="bi bi-box-arrow-right" onclick="logout()"></i>
+  </div>
+</div>
 
   <div id="messages"></div>
 
@@ -259,16 +281,53 @@ function showForm(){
   document.getElementById("loginForm").classList.remove("hidden");
 }
 
-socket.on("matched",p=>{
-  partner=p;
-  searching.style.display="none";
-  chat.style.display="flex";
-  messages.innerHTML="";
-  partnerName.innerText=p.name;
+function setStatus(status){
+  partnerStatus.innerText = status;
+  partnerStatus.classList.remove("status-online","status-offline","status-typing");
+  if(status === "Online") partnerStatus.classList.add("status-online");
+  else if(status === "Offline") partnerStatus.classList.add("status-offline");
+  else if(status === "Sedang mengetik…") partnerStatus.classList.add("status-typing");
+}
+
+socket.on("matched", p => {
+  partner = p;
+  searching.style.display = "none";
+  chat.style.display = "flex";
+  messages.innerHTML = "";
+  partnerName.innerText = p.name;
+  setStatus("Online"); // set status awal
 });
 
 socket.on("message",m=>{
   addMsg(m.text,"other",m.time);
+});
+
+msg.addEventListener("input", () => {
+  socket.emit("typing");
+});
+
+socket.on("typing", () => {
+  setStatus("Sedang mengetik…");
+  clearTimeout(window.typingTimeout);
+  window.typingTimeout = setTimeout(() => {
+    setStatus("Online");
+  }, 2000);
+});
+
+socket.on("typing", () => {
+  if(socket.partner) {
+    socket.partner.emit("typing");
+  }
+});
+
+socket.on("partner-left", () => {
+  setStatus("Offline");
+});
+
+socket.on("disconnect", () => {
+  if(socket.partner){
+    socket.partner.emit("partner-left");
+  }
 });
 
 function sendMessage(){
