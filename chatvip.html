@@ -295,11 +295,15 @@ socket.on("matched", p => {
   chat.style.display = "flex";
   messages.innerHTML = "";
   partnerName.innerText = p.name;
-  setStatus("Online"); // set status awal
+  setStatus("Online"); 
 });
 
-socket.on("message",m=>{
-  addMsg(m.text,"other",m.time);
+socket.on("message", m => {
+  const now = new Date();
+  const timeString = now.getHours().toString().padStart(2, '0') + ":" +
+                     now.getMinutes().toString().padStart(2, '0');
+
+  addMsg(m.text, "other", timeString);
 });
 
 msg.addEventListener("input", () => {
