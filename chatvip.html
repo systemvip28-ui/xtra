@@ -23,7 +23,9 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--text)}
 .screen{height:100%;display:flex;justify-content:center;align-items:center}
 .card{width:90%;max-width:420px;background:var(--card);padding:24px;border-radius:20px}
 
-input,select,button{width:100%;padding:12px;border-radius:12px;border:none;margin-bottom:10px}
+input,select,button{
+  width:100%;padding:12px;border-radius:12px;border:none;margin-bottom:10px
+}
 input,select{background:#0b141a;color:#fff}
 button{background:var(--accent);color:#fff;font-weight:600}
 
@@ -42,42 +44,32 @@ button{background:var(--accent);color:#fff;font-weight:600}
 #messages{flex:1;padding:12px;overflow-y:auto}
 .msg{max-width:78%;margin-bottom:8px;font-size:14px}
 .me{margin-left:auto}
-.bubble{
-  padding:8px 12px;border-radius:8px;
-}
+.bubble{padding:8px 12px;border-radius:8px}
 .me .bubble{background:var(--me);border-top-right-radius:0}
 .other .bubble{background:var(--other);border-top-left-radius:0}
 .time{font-size:10px;opacity:.5;text-align:right;margin-top:2px}
 
-/* IMAGE CHAT */
-.chat-img{
-  max-width:200px;
-  border-radius:8px;
-  cursor:pointer;
-}
-
 /* FOOTER */
 .footer{padding:8px;background:var(--card);display:flex;gap:6px}
-.footer input[type=text]{flex:1;border-radius:20px}
+.footer input{flex:1;border-radius:20px}
 .footer button{width:44px;border-radius:50%}
 
-/* RANGE */
-.range-wrap{
-  text-align:left;
-  font-size:14px;
-  margin-bottom:10px;
-}
-.range-wrap span{float:right}
-
-/* MODAL IMAGE */
-#imgView{
+/* INFO MODAL */
+#infoModal{
   position:fixed;inset:0;
-  background:#000;
+  background:rgba(0,0,0,.6);
   display:none;
   justify-content:center;
   align-items:center;
+  z-index:9
 }
-#imgView img{max-width:100%;max-height:100%}
+#infoBox{
+  background:#202c33;
+  width:90%;
+  max-width:320px;
+  padding:20px;
+  border-radius:16px
+}
 </style>
 </head>
 
@@ -88,11 +80,9 @@ button{background:var(--accent);color:#fff;font-weight:600}
   <div class="card">
     <input id="username" placeholder="Nama">
 
-    <div class="range-wrap">
-      Umur: <span id="ageVal">21</span>
-      <input id="age" type="range" min="16" max="30" value="21"
-        oninput="ageVal.innerText=this.value">
-    </div>
+    Umur: <span id="ageVal">21</span>
+    <input id="age" type="range" min="16" max="30" value="21"
+      oninput="ageVal.innerText=this.value">
 
     <select id="gender">
       <option value="">Gender</option>
@@ -107,6 +97,7 @@ button{background:var(--accent);color:#fff;font-weight:600}
       <option>Pengangguran</option>
     </select>
 
+    <!-- SERVER -->
     <select id="server">
       <option value="server1">Server 1</option>
       <option value="server2">Server 2</option>
@@ -125,7 +116,7 @@ button{background:var(--accent);color:#fff;font-weight:600}
       <div id="typing"></div>
     </div>
     <div class="icons">
-      <i class="bi bi-info-circle"></i>
+      <i class="bi bi-info-circle" onclick="openInfo()"></i>
       <i class="bi bi-box-arrow-right" onclick="logout()"></i>
     </div>
   </div>
@@ -133,124 +124,90 @@ button{background:var(--accent);color:#fff;font-weight:600}
   <div id="messages"></div>
 
   <div class="footer">
-    <input type="file" id="imgInput" accept="image/*" hidden>
-    <button onclick="imgInput.click()">📎</button>
-    <input id="text" type="text" placeholder="Pesan..."
-      oninput="typingEmit()"
+    <input id="text" placeholder="Pesan..."
       onkeydown="if(event.key==='Enter')sendText()">
     <button onclick="sendText()">➤</button>
   </div>
 </div>
 
-<!-- IMAGE VIEW -->
-<div id="imgView" onclick="this.style.display='none'">
-  <img id="fullImg">
+<!-- INFO -->
+<div id="infoModal">
+  <div id="infoBox">
+    <h3>Info Partner</h3>
+    <div id="infoContent"></div>
+    <button onclick="closeInfo()">Tutup</button>
+  </div>
 </div>
 
 <script>
 const socket = io("https://chat-jsb8.onrender.com",{reconnection:true});
-let partner=null, typingTimer=null;
 
-/* RESTORE */
-if(localStorage.inChat){
-  login.style.display="none";
-  chat.style.display="flex";
-  partner=JSON.parse(localStorage.chatPartner);
-  status.innerText="Chat dengan "+partner.name;
-}
+let partner=null;
 
 /* START */
 function start(){
   const user={
-    name:username.value,
+    name:username.value||"Anonim",
     age:age.value,
     gender:gender.value,
     job:job.value,
     server:server.value
   };
-  localStorage.chatUser=JSON.stringify(user);
   socket.emit("join",user);
   login.style.display="none";
   chat.style.display="flex";
+  status.innerText="Menghubungkan...";
 }
 
 /* MATCH */
 socket.on("matched",p=>{
   partner=p;
-  localStorage.chatPartner=JSON.stringify(p);
-  localStorage.inChat=true;
+  messages.innerHTML="";
   status.innerText="Chat dengan "+p.name;
 });
 
-/* TEXT MESSAGE */
+/* MESSAGE (SERVER KIRIM STRING) */
 socket.on("message",m=>{
-  if(m.type==="text") addText(m.text,"other",m.time);
-  if(m.type==="image") addImage(m.src,"other",m.time);
-  typing.innerText="";
+  addMsg(m.text,"other",m.time);
 });
 
-/* TYPING */
-function typingEmit(){
-  socket.emit("typing");
-  clearTimeout(typingTimer);
-  typingTimer=setTimeout(()=>socket.emit("stopTyping"),800);
-}
-socket.on("typing",()=>typing.innerText="mengetik...");
-socket.on("stopTyping",()=>typing.innerText="");
-
-/* SEND TEXT */
+/* SEND TEXT (KIRIM STRING) */
 function sendText(){
-  if(!text.value.trim())return;
-  socket.emit("message",{type:"text",text:text.value});
-  addText(text.value,"me",timeNow());
+  if(!text.value||!partner)return;
+  socket.emit("message", text.value);
+  addMsg(text.value,"me",timeNow());
   text.value="";
-  socket.emit("stopTyping");
 }
 
-/* SEND IMAGE */
-imgInput.onchange=()=>{
-  const r=new FileReader();
-  r.onload=()=>{
-    socket.emit("message",{type:"image",src:r.result});
-    addImage(r.result,"me",timeNow());
-  };
-  r.readAsDataURL(imgInput.files[0]);
-};
+/* INFO */
+function openInfo(){
+  if(!partner)return alert("Belum ada partner");
+  infoContent.innerHTML=`
+    <b>Nama:</b> ${partner.name}<br>
+    <b>Umur:</b> ${partner.age}<br>
+    <b>Gender:</b> ${partner.gender||"-"}<br>
+    <b>Pekerjaan:</b> ${partner.job||"-"}<br>
+    <b>Server:</b> ${partner.server}
+  `;
+  infoModal.style.display="flex";
+}
+function closeInfo(){infoModal.style.display="none";}
 
 /* UI */
-function addText(t,s,ti){
-  messages.insertAdjacentHTML("beforeend",
-    `<div class="msg ${s}">
-      <div class="bubble">${t}</div>
-      <div class="time">${ti}</div>
-    </div>`);
+function addMsg(t,s,ti){
+  messages.innerHTML+=`
+  <div class="msg ${s}">
+    <div class="bubble">${t}</div>
+    <div class="time">${ti}</div>
+  </div>`;
   messages.scrollTop=messages.scrollHeight;
-}
-function addImage(src,s,ti){
-  messages.insertAdjacentHTML("beforeend",
-    `<div class="msg ${s}">
-      <div class="bubble">
-        <img src="${src}" class="chat-img" onclick="viewImg(this.src)">
-      </div>
-      <div class="time">${ti}</div>
-    </div>`);
-  messages.scrollTop=messages.scrollHeight;
-}
-function viewImg(src){
-  fullImg.src=src;
-  imgView.style.display="flex";
 }
 function timeNow(){
   const d=new Date();
   return d.getHours().toString().padStart(2,"0")+":"+
          d.getMinutes().toString().padStart(2,"0");
 }
-
-/* LOGOUT */
-function logout(){
-  localStorage.clear();
-  location.reload();
-}
+function logout(){location.reload();}
 </script>
 
 </body>
