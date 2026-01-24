@@ -6,97 +6,78 @@
 <title>Chat Komunitas</title>
 
 <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
 
 <style>
 :root{
-  --bg:#0f1419;
-  --card:#1c2229;
-  --accent:#1da1f2;
-  --bubble:#2a2f36;
+  --bg:#0b141a;
+  --card:#202c33;
+  --me:#005c4b;
+  --other:#1f2c33;
+  --accent:#00a884;
+  --text:#e9edef;
 }
-
 *{box-sizing:border-box;font-family:system-ui}
-html,body{margin:0;height:100%;background:var(--bg);color:#fff}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text)}
 
-/* ===== SCREEN ===== */
 .screen{height:100%;display:flex;justify-content:center;align-items:center}
-.card{
-  width:90%;max-width:420px;
-  background:var(--card);
-  padding:24px;border-radius:20px;
-  text-align:center;
-}
+.card{width:90%;max-width:420px;background:var(--card);padding:24px;border-radius:20px}
 
-/* ===== FORM ===== */
-input,select,button{
-  width:100%;padding:14px;border-radius:14px;
-  border:none;margin-bottom:10px
-}
-input,select{background:#0f1419;color:#fff}
+input,select,button{width:100%;padding:12px;border-radius:12px;border:none;margin-bottom:10px}
+input,select{background:#0b141a;color:#fff}
 button{background:var(--accent);color:#fff;font-weight:600}
 
-/* ===== STATUS ===== */
-.online{color:#1fdf64}
-.offline{color:#ff4d4d}
-
-/* ===== CHAT ===== */
+/* CHAT */
 #chat{display:none;height:100%;flex-direction:column}
 .header{
   height:56px;background:var(--card);
-  display:flex;flex-direction:column;
-  justify-content:center;align-items:center;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 14px;
 }
-#status{font-weight:600}
-#partnerStatus{font-size:12px}
+.title{display:flex;flex-direction:column}
+#typing{font-size:12px;opacity:.6}
+.icons i{font-size:20px;margin-left:14px;cursor:pointer}
 
+/* MESSAGES */
 #messages{flex:1;padding:12px;overflow-y:auto}
-.msg{
-  max-width:75%;padding:10px 14px;
-  border-radius:18px;margin-bottom:8px
+.msg{max-width:78%;margin-bottom:8px;font-size:14px}
+.me{margin-left:auto}
+.bubble{
+  padding:8px 12px;border-radius:8px;
 }
-.me{background:var(--accent);margin-left:auto}
-.other{background:var(--bubble)}
-.time{font-size:10px;opacity:.6;text-align:right}
+.me .bubble{background:var(--me);border-top-right-radius:0}
+.other .bubble{background:var(--other);border-top-left-radius:0}
+.time{font-size:10px;opacity:.5;text-align:right;margin-top:2px}
 
-/* ===== FOOTER ===== */
-.footer{display:none;padding:10px;background:var(--card);gap:8px}
-.footer input{flex:1;border-radius:20px}
-.footer button{width:80px;border-radius:20px}
+/* IMAGE CHAT */
+.chat-img{
+  max-width:200px;
+  border-radius:8px;
+  cursor:pointer;
+}
 
-/* ===== PARTNER MODAL ===== */
-.modal{
+/* FOOTER */
+.footer{padding:8px;background:var(--card);display:flex;gap:6px}
+.footer input[type=text]{flex:1;border-radius:20px}
+.footer button{width:44px;border-radius:50%}
+
+/* RANGE */
+.range-wrap{
+  text-align:left;
+  font-size:14px;
+  margin-bottom:10px;
+}
+.range-wrap span{float:right}
+
+/* MODAL IMAGE */
+#imgView{
   position:fixed;inset:0;
-  background:rgba(0,0,0,.6);
-  display:none;z-index:20
+  background:#000;
+  display:none;
+  justify-content:center;
+  align-items:center;
 }
-.modal-panel{
-  position:absolute;right:0;top:0;
-  width:80%;max-width:320px;height:100%;
-  background:var(--card);padding:20px;
-  animation:slide .25s ease
-}
-@keyframes slide{
-  from{transform:translateX(100%)}
-  to{transform:translateX(0)}
-}
-.modal-panel img{
-  width:90px;height:90px;border-radius:50%;
-  object-fit:cover;display:block;
-  margin:20px auto;cursor:pointer
-}
-.close{
-  position:absolute;top:10px;right:10px;
-  background:none;color:#fff;font-size:18px
-}
-
-/* ===== FULLSCREEN PHOTO ===== */
-#photoView{
-  position:fixed;inset:0;
-  background:#000;display:none;
-  justify-content:center;align-items:center;
-  z-index:30
-}
-#photoView img{max-width:100%;max-height:100%}
+#imgView img{max-width:100%;max-height:100%}
 </style>
 </head>
 
@@ -105,165 +86,170 @@ button{background:var(--accent);color:#fff;font-weight:600}
 <!-- LOGIN -->
 <div class="screen" id="login">
   <div class="card">
-    <h2>Mulai Chat</h2>
     <input id="username" placeholder="Nama">
-    <input id="age" type="number" placeholder="Umur">
+
+    <div class="range-wrap">
+      Umur: <span id="ageVal">21</span>
+      <input id="age" type="range" min="16" max="30" value="21"
+        oninput="ageVal.innerText=this.value">
+    </div>
+
     <select id="gender">
       <option value="">Gender</option>
       <option>Laki-laki</option>
       <option>Perempuan</option>
     </select>
-    <input id="job" placeholder="Pekerjaan">
+
+    <select id="job">
+      <option value="">Pekerjaan</option>
+      <option>Sekolah</option>
+      <option>Kerja</option>
+      <option>Pengangguran</option>
+    </select>
+
     <select id="server">
       <option value="server1">Server 1</option>
       <option value="server2">Server 2</option>
       <option value="server3">Server 3</option>
     </select>
-    <input type="file" id="photo" accept="image/*">
+
     <button onclick="start()">Mulai Chat</button>
-
-    <p id="serverStatus" class="offline">🔴 Server Offline</p>
-  </div>
-</div>
-
-<!-- SEARCH -->
-<div class="screen" id="search" style="display:none">
-  <div class="card">
-    <h2>🔍 Mencari Partner...</h2>
   </div>
 </div>
 
 <!-- CHAT -->
 <div id="chat">
-  <div class="header" onclick="openPartner()">
-    <div id="status">Menghubungkan...</div>
-    <div id="partnerStatus" class="offline">● Offline</div>
+  <div class="header">
+    <div class="title">
+      <div id="status">Menghubungkan...</div>
+      <div id="typing"></div>
+    </div>
+    <div class="icons">
+      <i class="bi bi-info-circle"></i>
+      <i class="bi bi-box-arrow-right" onclick="logout()"></i>
+    </div>
   </div>
+
   <div id="messages"></div>
-  <div class="footer" id="footer">
-    <input id="text" placeholder="Ketik pesan..."
-      onkeydown="if(event.key==='Enter')send()">
-    <button onclick="send()">Kirim</button>
+
+  <div class="footer">
+    <input type="file" id="imgInput" accept="image/*" hidden>
+    <button onclick="imgInput.click()">📎</button>
+    <input id="text" type="text" placeholder="Pesan..."
+      oninput="typingEmit()"
+      onkeydown="if(event.key==='Enter')sendText()">
+    <button onclick="sendText()">➤</button>
   </div>
 </div>
 
-<!-- PARTNER INFO -->
-<div id="partnerModal" class="modal">
-  <div class="modal-panel">
-    <button class="close" onclick="closePartner()">✕</button>
-    <img id="pPhoto" onclick="openPhoto()">
-    <h3 id="pName"></h3>
-    <p id="pAge"></p>
-    <p id="pGender"></p>
-    <p id="pJob"></p>
-    <p id="pLocation"></p>
-  </div>
-</div>
-
-<!-- FULL PHOTO -->
-<div id="photoView" onclick="photoView.style.display='none'">
-  <img id="fullPhoto">
+<!-- IMAGE VIEW -->
+<div id="imgView" onclick="this.style.display='none'">
+  <img id="fullImg">
 </div>
 
 <script>
-const socket = io("https://chat-jsb8.onrender.com");
-let partner=null;
+const socket = io("https://chat-jsb8.onrender.com",{reconnection:true});
+let partner=null, typingTimer=null;
 
-/* ===== SERVER STATUS ===== */
-socket.on("connect",()=>{
-  serverStatus.innerText="🟢 Server Online";
-  serverStatus.className="online";
-});
-socket.on("disconnect",()=>{
-  serverStatus.innerText="🔴 Server Offline";
-  serverStatus.className="offline";
-});
-
-/* ===== START ===== */
-function start(){
-  if(!username.value||!age.value||!gender.value||!job.value)
-    return alert("Lengkapi data");
-
-  const reader=new FileReader();
-  reader.onload=()=>{
-    login.style.display="none";
-    search.style.display="flex";
-
-    socket.emit("join",{
-      name:username.value,
-      age:age.value,
-      gender:gender.value,
-      job:job.value,
-      server:server.value,
-      photo:reader.result,
-      location:""
-    });
-  };
-  photo.files[0]?reader.readAsDataURL(photo.files[0]):reader.onload();
-}
-
-/* ===== MATCH ===== */
-socket.on("matched", p=>{
-  partner=p;
-  search.style.display="none";
+/* RESTORE */
+if(localStorage.inChat){
+  login.style.display="none";
   chat.style.display="flex";
-  footer.style.display="flex";
-
-  status.innerText="Chat dengan "+p.name;
-  partnerStatus.innerText="● Online";
-  partnerStatus.className="online";
-});
-
-/* ===== MESSAGE ===== */
-socket.on("message", m=>{
-  if(m.text.includes("keluar")){
-    partnerStatus.innerText="● Offline";
-    partnerStatus.className="offline";
-  }
-  addMsg(m.text,"other",m.time);
-});
-
-function send(){
-  if(!text.value.trim())return;
-  socket.emit("message",text.value);
-  addMsg(text.value,"me",timeNow());
-  text.value="";
+  partner=JSON.parse(localStorage.chatPartner);
+  status.innerText="Chat dengan "+partner.name;
 }
 
-function addMsg(t,s,ti){
-  const d=document.createElement("div");
-  d.className="msg "+s;
-  d.innerHTML=t+`<div class="time">${ti}</div>`;
-  messages.appendChild(d);
+/* START */
+function start(){
+  const user={
+    name:username.value,
+    age:age.value,
+    gender:gender.value,
+    job:job.value,
+    server:server.value
+  };
+  localStorage.chatUser=JSON.stringify(user);
+  socket.emit("join",user);
+  login.style.display="none";
+  chat.style.display="flex";
+}
+
+/* MATCH */
+socket.on("matched",p=>{
+  partner=p;
+  localStorage.chatPartner=JSON.stringify(p);
+  localStorage.inChat=true;
+  status.innerText="Chat dengan "+p.name;
+});
+
+/* TEXT MESSAGE */
+socket.on("message",m=>{
+  if(m.type==="text") addText(m.text,"other",m.time);
+  if(m.type==="image") addImage(m.src,"other",m.time);
+  typing.innerText="";
+});
+
+/* TYPING */
+function typingEmit(){
+  socket.emit("typing");
+  clearTimeout(typingTimer);
+  typingTimer=setTimeout(()=>socket.emit("stopTyping"),800);
+}
+socket.on("typing",()=>typing.innerText="mengetik...");
+socket.on("stopTyping",()=>typing.innerText="");
+
+/* SEND TEXT */
+function sendText(){
+  if(!text.value.trim())return;
+  socket.emit("message",{type:"text",text:text.value});
+  addText(text.value,"me",timeNow());
+  text.value="";
+  socket.emit("stopTyping");
+}
+
+/* SEND IMAGE */
+imgInput.onchange=()=>{
+  const r=new FileReader();
+  r.onload=()=>{
+    socket.emit("message",{type:"image",src:r.result});
+    addImage(r.result,"me",timeNow());
+  };
+  r.readAsDataURL(imgInput.files[0]);
+};
+
+/* UI */
+function addText(t,s,ti){
+  messages.insertAdjacentHTML("beforeend",
+    `<div class="msg ${s}">
+      <div class="bubble">${t}</div>
+      <div class="time">${ti}</div>
+    </div>`);
   messages.scrollTop=messages.scrollHeight;
 }
-
-/* ===== PARTNER INFO ===== */
-function openPartner(){
-  if(!partner)return;
-  pPhoto.src=partner.photo||"";
-  pName.innerText=partner.name;
-  pAge.innerText="Umur: "+partner.age;
-  pGender.innerText="Gender: "+partner.gender;
-  pJob.innerText="Pekerjaan: "+partner.job;
-  pLocation.innerText="Lokasi: "+(partner.location||"-");
-  partnerModal.style.display="block";
+function addImage(src,s,ti){
+  messages.insertAdjacentHTML("beforeend",
+    `<div class="msg ${s}">
+      <div class="bubble">
+        <img src="${src}" class="chat-img" onclick="viewImg(this.src)">
+      </div>
+      <div class="time">${ti}</div>
+    </div>`);
+  messages.scrollTop=messages.scrollHeight;
 }
-function closePartner(){partnerModal.style.display="none"}
-partnerModal.onclick=e=>{
-  if(e.target===partnerModal)closePartner();
+function viewImg(src){
+  fullImg.src=src;
+  imgView.style.display="flex";
 }
-
-/* ===== FULL PHOTO ===== */
-function openPhoto(){
-  fullPhoto.src=partner.photo;
-  photoView.style.display="flex";
-}
-
 function timeNow(){
   const d=new Date();
   return d.getHours().toString().padStart(2,"0")+":"+
          d.getMinutes().toString().padStart(2,"0");
+}
+
+/* LOGOUT */
+function logout(){
+  localStorage.clear();
+  location.reload();
 }
 </script>
 
