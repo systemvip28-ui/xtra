@@ -236,13 +236,20 @@ const socket = io("https://chat-jsb8.onrender.com");
 let partner = null;
 
 function start(){
+  const username = document.getElementById("name").value.trim();
+  const userAge  = document.getElementById("age").value;
+  const userGender = document.getElementById("gender").value;
+  const userJob = document.getElementById("job").value;
+  const userServer = document.getElementById("server").value;
+
   socket.emit("join",{
-    name:name.value || "Anonim",
-    age:age.value,
-    gender:gender.value,
-    job:job.value,
-    server:server.value
+    name: username !== "" ? username : "Anonim",
+    age: userAge,
+    gender: userGender,
+    job: userJob,
+    server: userServer
   });
+
   login.style.display="none";
   searching.style.display="flex";
 }
