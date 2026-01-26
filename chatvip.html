@@ -39,18 +39,15 @@
 .video-body video{
   width:100%;
   height:100%;
-  object-fit:cover;
+  object-fit: contain; 
+  background:#000;
 }
 
 .video-body .pip{
-  position:absolute;
-  bottom:12px;
-  right:12px;
-  width:110px;
-  height:160px;
-  border-radius:12px;
-  border:2px solid #111;
-  background:#000;
+  width:96px;
+  height:128px;
+  object-fit: cover;
+  border-radius:10px;
 }
 
 .video-footer{
@@ -507,11 +504,18 @@ function rejectCall(){
 
 async function startMedia(){
   if(localStream) return;
+
   try{
     localStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: isFront ? "user" : "environment", width:720, height:1280 },
-      audio:true
+      video: {
+        facingMode: isFront ? "user" : "environment",
+        width: { ideal: 640 },
+        height:{ ideal: 480 },
+        frameRate: { ideal: 24 }
+      },
+      audio: true
     });
+
     localVideo.srcObject = localStream;
     localVideo.muted = true;
     await localVideo.play();
