@@ -375,21 +375,33 @@ function timeNow(){
 </script>
 <script>
 let pc, localStream, isFront=true;
-
 const ice = { iceServers:[{urls:"stun:stun.l.google.com:19302"}] };
+let callPending = false; // menandai pengirim menunggu penerima
 
-async function callUser() {
-  if(!partner || pc) return;
-
-  await startMedia();       
-  if(!pc) createPeer();     
-  localStream.getTracks().forEach(track => pc.addTrack(track, localStream)); 
-
-  const offer = await pc.createOffer(); 
-  await pc.setLocalDescription(offer);
-  socket.emit("offer", offer);
+// Pengirim memulai panggilan
+function callUser(){
+  if(!partner || callPending) return;
+  socket.emit("call-user", { name: partner.name });
+  callPending = true;
+  alert("Menunggu penerima menerima panggilan...");
 }
 
+// Penerima menerima event panggilan masuk
+socket.on("incoming-call", data => {
+  callerName.innerText = data.name;
+  incomingCall.style.display = "flex";
+});
+
+// Penerima menekan terima
+async function acceptCall(){
+  incomingCall.style.display="none";
+  await startMedia();
+  createPeer();
+  localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+
+  videoScreen.style.display="flex";
+  socket.emit("accept-call"); // beri tahu pengirim diterima
+}
 async function createOffer(){
   if(!pc) return;
   const offer = await pc.createOffer();
@@ -398,56 +410,50 @@ async function createOffer(){
 }
 
 function createPeer(){
-  if(pc) return;  
+  if(pc) return;
   pc = new RTCPeerConnection(ice);
 
-  pc.ontrack = e => {
-  remoteVideo.srcObject = e.streams[0];
-};
-
+  pc.ontrack = e => remoteVideo.srcObject = e.streams[0];
   pc.onicecandidate = e => {
     if(e.candidate) socket.emit("ice", e.candidate);
   };
-
   pc.onconnectionstatechange = checkSignal;
 }
 
-socket.on("call-accepted", async ()=>{
+socket.on("call-accepted", async () => {
+  callPending = false;
   await startMedia();
+  createPeer();
+  localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+
+  const offer = await pc.createOffer();
+  await pc.setLocalDescription(offer);
+  socket.emit("offer", offer);
+
+  videoScreen.style.display="flex"; // tampilkan layar video pengirim
 });
 
-socket.on("incoming-call", data => {
-  callerName.innerText = data.name;
-  incomingCall.style.display = "flex";
-});
-
-async function acceptCall(){
-  if(pc) return;
-  incomingCall.style.display="none";
-
-  await startMedia();     
-  if(!pc) createPeer();     
-  localStream.getTracks().forEach(track => pc.addTrack(track, localStream)); 
-
-  videoScreen.style.display = "flex";
-
-  socket.emit("accept-call"); 
-}
 
 socket.on("offer", async offer=>{
+  if(!pc) createPeer();
   await startMedia();
+  localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+
   await pc.setRemoteDescription(new RTCSessionDescription(offer));
   const answer = await pc.createAnswer();
   await pc.setLocalDescription(answer);
   socket.emit("answer", answer);
+
+  videoScreen.style.display="flex"; // tampilkan layar penerima
 });
 
 socket.on("answer", async answer=>{
   await pc.setRemoteDescription(new RTCSessionDescription(answer));
 });
 
+// ICE candidates
 socket.on("ice", async candidate=>{
-  if(candidate) await pc.addIceCandidate(candidate);
+  if(candidate && pc) await pc.addIceCandidate(candidate);
 });
 
 socket.on("end-call", () => {
@@ -477,20 +483,15 @@ function rejectCall(){
 }
 
 async function startMedia(){
-  if(localStream) return; 
-
+  if(localStream) return;
   try{
     localStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: isFront ? "user" : "environment", width:720, height:1280 },
+      video: { facingMode: isFront?"user":"environment", width:720, height:1280 },
       audio:true
     });
-
     localVideo.srcObject = localStream;
     localVideo.muted = true;
     await localVideo.play();
-
-    videoScreen.style.display = "flex";
-
   }catch(err){
     alert("Kamera / mikrofon tidak diizinkan");
     console.error(err);
@@ -532,19 +533,13 @@ async function switchCamera(){
 
 function endCall(){
   if(pc) pc.close();
-
   if(localStream){
     localStream.getTracks().forEach(t=>t.stop());
     localStream = null;
   }
-
-  remoteVideo.srcObject = null;
   pc = null;
-
-  videoScreen.style.display = "none";
-
-  document.querySelector(".net-status").style.display = "none";
-
+  remoteVideo.srcObject = null;
+  videoScreen.style.display="none";
   socket.emit("end-call");
 }
 
