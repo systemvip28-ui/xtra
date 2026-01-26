@@ -379,12 +379,13 @@ let pc, localStream, isFront=true;
 const ice = { iceServers:[{urls:"stun:stun.l.google.com:19302"}] };
 
 async function callUser() {
-  if (!partner || pc) return;
+  if(!partner || pc) return;
 
-  await startMedia(); 
-  createPeer();
-  
-  const offer = await pc.createOffer();
+  await startMedia();       
+  if(!pc) createPeer();     
+  localStream.getTracks().forEach(track => pc.addTrack(track, localStream)); 
+
+  const offer = await pc.createOffer(); 
   await pc.setLocalDescription(offer);
   socket.emit("offer", offer);
 }
@@ -401,11 +402,8 @@ function createPeer(){
   pc = new RTCPeerConnection(ice);
 
   pc.ontrack = e => {
-    if(!remoteVideo.srcObject){
-      remoteVideo.srcObject = e.streams[0];
-      remoteVideo.play();
-    }
-  };
+  remoteVideo.srcObject = e.streams[0];
+};
 
   pc.onicecandidate = e => {
     if(e.candidate) socket.emit("ice", e.candidate);
@@ -426,6 +424,17 @@ socket.on("incoming-call", data => {
   incomingCall.style.display = "flex";
   createPeer(); 
 });
+
+async function acceptCall() {
+  if(pc) return;
+  incomingCall.style.display = "none";
+
+  await startMedia();     
+  if(!pc) createPeer();     
+  localStream.getTracks().forEach(track => pc.addTrack(track, localStream)); 
+
+  socket.emit("accept-call"); 
+}
 
 socket.on("offer", async offer=>{
   await startMedia();
@@ -477,33 +486,19 @@ function rejectCall(){
 }
 
 async function startMedia(){
-  if(localStream) return;
+  if(localStream) return; 
 
   try{
     localStream = await navigator.mediaDevices.getUserMedia({
-      video:{
-        facingMode: isFront ? "user" : "environment",
-        width: { ideal: 720 },
-        height:{ ideal: 1280 }
-      },
+      video: { facingMode: isFront ? "user" : "environment", width:720, height:1280 },
       audio:true
     });
 
     localVideo.srcObject = localStream;
     localVideo.muted = true;
-    localVideo.playsInline = true;
     await localVideo.play();
 
     videoScreen.style.display = "flex";
-
-    const net = document.querySelector(".net-status");
-    if(net) net.style.display = "flex";
-
-    createPeer();
-
-    localStream.getTracks().forEach(track=>{
-      pc.addTrack(track, localStream);
-    });
 
   }catch(err){
     alert("Kamera / mikrofon tidak diizinkan");
