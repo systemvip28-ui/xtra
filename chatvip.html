@@ -10,50 +10,68 @@
 
 <style> :root{ --bg:#0b141a; --card:#202c33; --me:#005c4b; --other:#1f2c33; --accent:#00a884; --text:#e9edef; } *{box-sizing:border-box;font-family:system-ui} html,body{margin:0;height:100%;background:var(--bg);color:var(--text)} .screen{height:100%;display:flex;justify-content:center;align-items:center} .card{width:90%;max-width:420px;background:var(--card);padding:24px;border-radius:20px} input,select,button{ width:100%;padding:12px;border-radius:12px;border:none;margin-bottom:10px } input,select{background:#0b141a;color:#fff} button{background:var(--accent);color:#fff;font-weight:600} #searching{ display:none; flex-direction:column; align-items:center; gap:12px; } .loader{ width:36px;height:36px; border:4px solid #2a3942; border-top-color:var(--accent); border-radius:50%; animation:spin 1s linear infinite; } @keyframes spin{to{transform:rotate(360deg)}} #chat{display:none;height:100%;flex-direction:column} .header{ height:56px;background:var(--card); display:flex;align-items:center;justify-content:space-between; padding:0 14px; } .icons i{font-size:20px;margin-left:14px;cursor:pointer} #messages{flex:1;padding:12px;overflow-y:auto} .msg{max-width:78%;margin-bottom:8px;font-size:14px} .me{margin-left:auto} .bubble{padding:8px 12px;border-radius:8px} .me .bubble{background:var(--me);border-top-right-radius:0} .other .bubble{background:var(--other);border-top-left-radius:0} .time{font-size:10px;opacity:.5;text-align:right;margin-top:2px} .footer{padding:8px;background:var(--card);display:flex;gap:6px} .footer input{flex:1;border-radius:20px} .footer button{width:44px;border-radius:50%} #profileModal{ position:fixed;inset:0; background:rgba(0,0,0,.6); display:none; justify-content:center; align-items:center; z-index:9 } #profileBox{ background:#202c33; width:90%; max-width:320px; padding:20px; border-radius:16px } .login-header{ text-align:center; animation:fadeUp .6s ease; } .login-header .logo{ font-size:40px; margin-bottom:6px; } .login-header h1{ margin:0; font-size:22px; font-weight:700; } .login-header p{ margin:4px 0 16px; font-size:13px; opacity:.7; } .start-btn{ width:160px; margin:0 auto; border-radius:30px; } .card{ margin-top:20px; animation:slideUp .4s ease; } .hidden{ display:none; } .age-wrap{ display:flex; justify-content:space-between; font-weight: bold; font-size:14px; opacity:.8; margin-top:10px; } @keyframes fadeUp{ from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} } @keyframes slideUp{ from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} } .card-header{ text-align:center; margin-bottom:14px; } .card-header h2{ margin:0; font-size:18px; font-weight:700; } .card-header p{ margin:4px 0 0; font-size:12px; opacity:.7; } #partnerStatus { transition: color 0.3s; font-style: italic; } .status-online { color: #25D366; font-weight: bold; } .status-offline { color: #FF4D4D; font-weight: bold; } .status-typing { color: #FFD700; font-weight: bold; } </style>
 <style>
-#videoScreen{ display:flex; justify-content:center; align-items:center; }
-#videoScreen video{ position:absolute; inset:0; }
-.video-controls{
-  position:absolute;
-  bottom:16px;
-  left:50%;
-  transform:translateX(-50%);
+.video-wrap{
+  position:fixed;
+  inset:0;
+  background:#000;
+  display:none;
+  flex-direction:column;
+  z-index:30;
+}
+
+.video-header{
+  height:56px;
+  background:#0b141a;
+  color:#fff;
   display:flex;
-  gap:16px;
+  align-items:center;
+  justify-content:space-between;
+  padding:0 14px;
+  font-weight:600;
 }
-.video-controls i{
-  background:#202c33;
-  padding:14px;
-  border-radius:50%;
-  font-size:22px;
+
+.video-body{
+  flex:1;
+  position:relative;
+  background:#000;
 }
-.modal{
-  position:fixed; inset:0;
-  background:rgba(0,0,0,.7);
-  display:none; justify-content:center; align-items:center;
-  z-index:20;
+
+.video-body video{
+  width:100%;
+  height:100%;
+  object-fit:cover;
 }
-.modal-box{
-  background:#202c33;
-  padding:20px;
-  border-radius:16px;
-  width:80%;
-  max-width:300px;
-  text-align:center;
-}
-.modal-box button{
-  width:100%; margin-top:10px;
-}
-.local{
+
+.video-body .pip{
   position:absolute;
-  bottom:90px;
+  bottom:12px;
   right:12px;
   width:110px;
-  height:150px;
-  border-radius:14px;
-  object-fit:cover;
+  height:160px;
+  border-radius:12px;
   border:2px solid #111;
   background:#000;
 }
+
+.video-footer{
+  height:72px;
+  background:#0b141a;
+  display:flex;
+  justify-content:space-evenly;
+  align-items:center;
+}
+
+.video-footer i{
+  font-size:24px;
+  padding:14px;
+  border-radius:50%;
+  background:#202c33;
+}
+
+.video-footer .end{
+  background:#222;
+}
+
 .net-status{
   position:absolute;
   top:14px;
@@ -148,16 +166,22 @@
   </div>
 </div>
 
-<div id="videoScreen" class="modal">
-  <video id="remoteVideo" autoplay playsinline></video>
-  <video id="localVideo" autoplay muted playsinline class="local"></video>
+<div id="videoScreen" class="video-wrap">
+  <div class="video-header">
+    <span id="callName">Video Call</span>
+    <i class="bi bi-x-lg" onclick="endCall()"></i>
+  </div>
 
-  <div class="video-controls">
-    <i class="bi bi-mic-fill" onclick="toggleMic()" id="micBtn"></i>
-    <i class="bi bi-camera-video-fill" onclick="toggleCam()" id="camBtn"></i>
+  <div class="video-body">
+    <video id="remoteVideo" autoplay playsinline></video>
+    <video id="localVideo" autoplay muted playsinline class="pip"></video>
+  </div>
+
+  <div class="video-footer">
+    <i id="micBtn" class="bi bi-mic-fill" onclick="toggleMic()"></i>
+    <i id="camBtn" class="bi bi-camera-video-fill" onclick="toggleCam()"></i>
     <i class="bi bi-arrow-repeat" onclick="switchCamera()"></i>
-    <span id="signal">🟢</span>
-    <i class="bi bi-telephone-x-fill" onclick="endCall()"></i>
+    <i class="bi bi-telephone-x-fill end" onclick="endCall()"></i>
   </div>
 </div>
 
@@ -430,37 +454,65 @@ function rejectCall(){
 async function startMedia(){
   if(localStream) return;
 
-  localStream = await navigator.mediaDevices.getUserMedia({
-    video:{ facingMode:isFront ? "user" : "environment" },
-    audio:true
-  });
+  try{
+    localStream = await navigator.mediaDevices.getUserMedia({
+      video:{
+        facingMode: isFront ? "user" : "environment",
+        width: { ideal: 720 },
+        height:{ ideal: 1280 }
+      },
+      audio:true
+    });
 
-  localVideo.srcObject = localStream;
-  localVideo.muted = true;
-  localVideo.playsInline = true;
-  localVideo.play();
+    /* local preview (kamera sendiri) */
+    localVideo.srcObject = localStream;
+    localVideo.muted = true;
+    localVideo.playsInline = true;
+    await localVideo.play();
 
-  videoScreen.style.display = "flex";
+    /* tampilkan layar video (TIDAK fullscreen) */
+    videoScreen.style.display = "flex";
 
-  document.querySelector(".net-status").style.display = "flex";
+    /* status jaringan */
+    const net = document.querySelector(".net-status");
+    if(net) net.style.display = "flex";
 
-  createPeer();
+    /* buat peer connection */
+    createPeer();
 
-  localStream.getTracks().forEach(track=>{
-    pc.addTrack(track, localStream);
-  });
+    /* kirim track ke peer */
+    localStream.getTracks().forEach(track=>{
+      pc.addTrack(track, localStream);
+    });
+
+  }catch(err){
+    alert("Kamera / mikrofon tidak diizinkan");
+    console.error(err);
+  }
 }
 
 function toggleMic(){
   if(!localStream) return;
   const t = localStream.getAudioTracks()[0];
-  if(t) t.enabled = !t.enabled;
+  t.enabled = !t.enabled;
+
+  micBtn.className = t.enabled 
+    ? "bi bi-mic-fill" 
+    : "bi bi-mic-mute-fill";
+
+  socket.emit("media-status",{ mic:t.enabled });
 }
 
 function toggleCam(){
   if(!localStream) return;
   const t = localStream.getVideoTracks()[0];
-  if(t) t.enabled = !t.enabled;
+  t.enabled = !t.enabled;
+
+  camBtn.className = t.enabled
+    ? "bi bi-camera-video-fill"
+    : "bi bi-camera-video-off-fill";
+
+  socket.emit("media-status",{ cam:t.enabled });
 }
 
 async function switchCamera(){
