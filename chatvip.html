@@ -378,9 +378,15 @@ let pc, localStream, isFront=true;
 
 const ice = { iceServers:[{urls:"stun:stun.l.google.com:19302"}] };
 
-function callUser(){
-  if(!partner || pc) return;
-  socket.emit("call-user");
+async function callUser() {
+  if (!partner || pc) return;
+
+  await startMedia(); 
+  createPeer();
+  
+  const offer = await pc.createOffer();
+  await pc.setLocalDescription(offer);
+  socket.emit("offer", offer);
 }
 
 async function createOffer(){
@@ -415,9 +421,10 @@ socket.on("call-accepted", async ()=>{
   socket.emit("offer", offer);
 });
 
-socket.on("incoming-call", data=>{
+socket.on("incoming-call", data => {
   callerName.innerText = data.name;
-  incomingCall.style.display="flex";
+  incomingCall.style.display = "flex";
+  createPeer(); 
 });
 
 socket.on("offer", async offer=>{
@@ -482,23 +489,18 @@ async function startMedia(){
       audio:true
     });
 
-    /* local preview (kamera sendiri) */
     localVideo.srcObject = localStream;
     localVideo.muted = true;
     localVideo.playsInline = true;
     await localVideo.play();
 
-    /* tampilkan layar video (TIDAK fullscreen) */
     videoScreen.style.display = "flex";
 
-    /* status jaringan */
     const net = document.querySelector(".net-status");
     if(net) net.style.display = "flex";
 
-    /* buat peer connection */
     createPeer();
 
-    /* kirim track ke peer */
     localStream.getTracks().forEach(track=>{
       pc.addTrack(track, localStream);
     });
