@@ -10,21 +10,22 @@
 
 <style> :root{ --bg:#0b141a; --card:#202c33; --me:#005c4b; --other:#1f2c33; --accent:#00a884; --text:#e9edef; } *{box-sizing:border-box;font-family:system-ui} html,body{margin:0;height:100%;background:var(--bg);color:var(--text)} .screen{height:100%;display:flex;justify-content:center;align-items:center} .card{width:90%;max-width:420px;background:var(--card);padding:24px;border-radius:20px} input,select,button{ width:100%;padding:12px;border-radius:12px;border:none;margin-bottom:10px } input,select{background:#0b141a;color:#fff} button{background:var(--accent);color:#fff;font-weight:600} #searching{ display:none; flex-direction:column; align-items:center; gap:12px; } .loader{ width:36px;height:36px; border:4px solid #2a3942; border-top-color:var(--accent); border-radius:50%; animation:spin 1s linear infinite; } @keyframes spin{to{transform:rotate(360deg)}} #chat{display:none;height:100%;flex-direction:column} .header{ height:56px;background:var(--card); display:flex;align-items:center;justify-content:space-between; padding:0 14px; } .icons i{font-size:20px;margin-left:14px;cursor:pointer} #messages{flex:1;padding:12px;overflow-y:auto} .msg{max-width:78%;margin-bottom:8px;font-size:14px} .me{margin-left:auto} .bubble{padding:8px 12px;border-radius:8px} .me .bubble{background:var(--me);border-top-right-radius:0} .other .bubble{background:var(--other);border-top-left-radius:0} .time{font-size:10px;opacity:.5;text-align:right;margin-top:2px} .footer{padding:8px;background:var(--card);display:flex;gap:6px} .footer input{flex:1;border-radius:20px} .footer button{width:44px;border-radius:50%} #profileModal{ position:fixed;inset:0; background:rgba(0,0,0,.6); display:none; justify-content:center; align-items:center; z-index:9 } #profileBox{ background:#202c33; width:90%; max-width:320px; padding:20px; border-radius:16px } .login-header{ text-align:center; animation:fadeUp .6s ease; } .login-header .logo{ font-size:40px; margin-bottom:6px; } .login-header h1{ margin:0; font-size:22px; font-weight:700; } .login-header p{ margin:4px 0 16px; font-size:13px; opacity:.7; } .start-btn{ width:160px; margin:0 auto; border-radius:30px; } .card{ margin-top:20px; animation:slideUp .4s ease; } .hidden{ display:none; } .age-wrap{ display:flex; justify-content:space-between; font-weight: bold; font-size:14px; opacity:.8; margin-top:10px; } @keyframes fadeUp{ from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} } @keyframes slideUp{ from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} } .card-header{ text-align:center; margin-bottom:14px; } .card-header h2{ margin:0; font-size:18px; font-weight:700; } .card-header p{ margin:4px 0 0; font-size:12px; opacity:.7; } #partnerStatus { transition: color 0.3s; font-style: italic; } .status-online { color: #25D366; font-weight: bold; } .status-offline { color: #FF4D4D; font-weight: bold; } .status-typing { color: #FFD700; font-weight: bold; } </style>
 <style>
-#videoScreen video{
-  width:100%; height:100%; object-fit:cover;
-}
-.local{
-  position:absolute; bottom:90px; right:10px;
-  width:100px; border-radius:12px;
-}
+#videoScreen{ display:flex; justify-content:center; align-items:center; }
+#videoScreen video{ position:absolute; inset:0; }
+
 .video-controls{
-  position:absolute; bottom:20px; left:50%;
+  position:absolute;
+  bottom:16px;
+  left:50%;
   transform:translateX(-50%);
-  display:flex; gap:14px;
+  display:flex;
+  gap:16px;
 }
 .video-controls i{
-  font-size:22px; background:#202c33;
-  padding:12px; border-radius:50%;
+  background:#202c33;
+  padding:14px;
+  border-radius:50%;
+  font-size:22px;
 }
 .modal{
   position:fixed; inset:0;
@@ -42,6 +43,31 @@
 }
 .modal-box button{
   width:100%; margin-top:10px;
+}
+.local{
+  position:absolute;
+  bottom:90px;
+  right:12px;
+  width:110px;
+  height:150px;
+  border-radius:14px;
+  object-fit:cover;
+  border:2px solid #25D366;
+  background:#000;
+}
+.net-status{
+  position:absolute;
+  top:14px;
+  left:50%;
+  transform:translateX(-50%);
+  display:flex;
+  align-items:center;
+  gap:10px;
+  display:none; 
+  background:#202c33cc;
+  padding:6px 12px;
+  border-radius:20px;
+  font-size:12px;
 }
 
 </style>
@@ -152,6 +178,12 @@
     <br>
     <button onclick="closeProfile()">Tutup</button>
   </div>
+</div>
+
+<div class="net-status">
+  <span id="netLeft">Stabil</span>
+  <span id="signalDot">🟢</span>
+  <span id="netRight">HD</span>
 </div>
 
 <script>
@@ -317,9 +349,29 @@ async function createOffer(){
   socket.emit("offer", offer);
 }
 
+function createPeer(){
+  if(pc) return;  
+  pc = new RTCPeerConnection(ice);
+
+  pc.ontrack = e => {
+    if(!remoteVideo.srcObject){
+      remoteVideo.srcObject = e.streams[0];
+      remoteVideo.play();
+    }
+  };
+
+  pc.onicecandidate = e => {
+    if(e.candidate) socket.emit("ice", e.candidate);
+  };
+
+  pc.onconnectionstatechange = checkSignal;
+}
+
 socket.on("call-accepted", async ()=>{
   await startMedia();
-  await createOffer();
+  const offer = await pc.createOffer();
+  await pc.setLocalDescription(offer);
+  socket.emit("offer", offer);
 });
 
 socket.on("incoming-call", data=>{
@@ -328,7 +380,7 @@ socket.on("incoming-call", data=>{
 });
 
 socket.on("offer", async offer=>{
-  if(!pc) await startMedia();
+  await startMedia();
   await pc.setRemoteDescription(new RTCSessionDescription(offer));
   const answer = await pc.createAnswer();
   await pc.setLocalDescription(answer);
@@ -345,19 +397,27 @@ socket.on("ice", async candidate=>{
 
 socket.on("end-call", () => {
   if(pc) pc.close();
+
   if(localStream){
     localStream.getTracks().forEach(t=>t.stop());
     localStream=null;
   }
+
+  remoteVideo.srcObject = null;
   pc=null;
   videoScreen.style.display="none";
+
+  document.querySelector(".net-status").style.display = "none";
 });
 
 socket.on("call-rejected", ()=>{
   alert("Panggilan ditolak");
+  document.querySelector(".net-status").style.display = "none";
+  videoScreen.style.display = "none";
 });
 
 async function acceptCall(){
+  if(pc) return;
   incomingCall.style.display="none";
   await startMedia();
   socket.emit("accept-call");
@@ -377,24 +437,31 @@ async function startMedia(){
   });
 
   localVideo.srcObject = localStream;
+  localVideo.muted = true;
+  localVideo.playsInline = true;
+  localVideo.play();
+
   videoScreen.style.display = "flex";
 
-  pc = new RTCPeerConnection(ice);
-  localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
+  document.querySelector(".net-status").style.display = "flex";
 
-  pc.ontrack = e => remoteVideo.srcObject = e.streams[0];
-  pc.onicecandidate = e => e.candidate && socket.emit("ice", e.candidate);
-  pc.onconnectionstatechange = checkSignal;
+  createPeer();
+
+  localStream.getTracks().forEach(track=>{
+    pc.addTrack(track, localStream);
+  });
 }
 
 function toggleMic(){
-  const t=localStream.getAudioTracks()[0];
-  t.enabled=!t.enabled;
+  if(!localStream) return;
+  const t = localStream.getAudioTracks()[0];
+  if(t) t.enabled = !t.enabled;
 }
 
 function toggleCam(){
-  const t=localStream.getVideoTracks()[0];
-  t.enabled=!t.enabled;
+  if(!localStream) return;
+  const t = localStream.getVideoTracks()[0];
+  if(t) t.enabled = !t.enabled;
 }
 
 async function switchCamera(){
@@ -408,32 +475,38 @@ async function switchCamera(){
 
 function endCall(){
   if(pc) pc.close();
+
   if(localStream){
     localStream.getTracks().forEach(t=>t.stop());
     localStream = null;
   }
+
+  remoteVideo.srcObject = null;
   pc = null;
-  videoScreen.style.display="none";
+
+  videoScreen.style.display = "none";
+
+  document.querySelector(".net-status").style.display = "none";
+
   socket.emit("end-call");
 }
 
 function checkSignal(){
-  const s=pc.connectionState;
-  if(s==="connected") signal.textContent="🟢";
-  if(s==="disconnected") signal.textContent="🟡";
+  const s = pc.connectionState;
+  if(s==="connected"){
+    signalDot.textContent="🟢";
+    netLeft.textContent="Stabil";
+  }
+  if(s==="disconnected"){
+    signalDot.textContent="🟡";
+    netLeft.textContent="Lemah";
+  }
   if(s==="failed"){
-    signal.textContent="🔴";
-    startReconnect();
+    signalDot.textContent="🔴";
+    netLeft.textContent="Terputus";
   }
 }
 
-function startReconnect(){
-  signal.textContent="🔴";
-  reconnectTimer=setTimeout(()=>{
-    endCall();
-  },60000);
-}
 </script>
-
 </body>
 </html>
