@@ -414,24 +414,22 @@ function createPeer(){
 
 socket.on("call-accepted", async ()=>{
   await startMedia();
-  const offer = await pc.createOffer();
-  await pc.setLocalDescription(offer);
-  socket.emit("offer", offer);
 });
 
 socket.on("incoming-call", data => {
   callerName.innerText = data.name;
   incomingCall.style.display = "flex";
-  createPeer(); 
 });
 
-async function acceptCall() {
+async function acceptCall(){
   if(pc) return;
-  incomingCall.style.display = "none";
+  incomingCall.style.display="none";
 
   await startMedia();     
   if(!pc) createPeer();     
   localStream.getTracks().forEach(track => pc.addTrack(track, localStream)); 
+
+  videoScreen.style.display = "flex";
 
   socket.emit("accept-call"); 
 }
@@ -472,13 +470,6 @@ socket.on("call-rejected", ()=>{
   document.querySelector(".net-status").style.display = "none";
   videoScreen.style.display = "none";
 });
-
-async function acceptCall(){
-  if(pc) return;
-  incomingCall.style.display="none";
-  await startMedia();
-  socket.emit("accept-call");
-}
 
 function rejectCall(){
   incomingCall.style.display="none";
