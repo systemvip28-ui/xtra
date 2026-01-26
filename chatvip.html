@@ -9,7 +9,42 @@
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
 
 <style> :root{ --bg:#0b141a; --card:#202c33; --me:#005c4b; --other:#1f2c33; --accent:#00a884; --text:#e9edef; } *{box-sizing:border-box;font-family:system-ui} html,body{margin:0;height:100%;background:var(--bg);color:var(--text)} .screen{height:100%;display:flex;justify-content:center;align-items:center} .card{width:90%;max-width:420px;background:var(--card);padding:24px;border-radius:20px} input,select,button{ width:100%;padding:12px;border-radius:12px;border:none;margin-bottom:10px } input,select{background:#0b141a;color:#fff} button{background:var(--accent);color:#fff;font-weight:600} #searching{ display:none; flex-direction:column; align-items:center; gap:12px; } .loader{ width:36px;height:36px; border:4px solid #2a3942; border-top-color:var(--accent); border-radius:50%; animation:spin 1s linear infinite; } @keyframes spin{to{transform:rotate(360deg)}} #chat{display:none;height:100%;flex-direction:column} .header{ height:56px;background:var(--card); display:flex;align-items:center;justify-content:space-between; padding:0 14px; } .icons i{font-size:20px;margin-left:14px;cursor:pointer} #messages{flex:1;padding:12px;overflow-y:auto} .msg{max-width:78%;margin-bottom:8px;font-size:14px} .me{margin-left:auto} .bubble{padding:8px 12px;border-radius:8px} .me .bubble{background:var(--me);border-top-right-radius:0} .other .bubble{background:var(--other);border-top-left-radius:0} .time{font-size:10px;opacity:.5;text-align:right;margin-top:2px} .footer{padding:8px;background:var(--card);display:flex;gap:6px} .footer input{flex:1;border-radius:20px} .footer button{width:44px;border-radius:50%} #profileModal{ position:fixed;inset:0; background:rgba(0,0,0,.6); display:none; justify-content:center; align-items:center; z-index:9 } #profileBox{ background:#202c33; width:90%; max-width:320px; padding:20px; border-radius:16px } .login-header{ text-align:center; animation:fadeUp .6s ease; } .login-header .logo{ font-size:40px; margin-bottom:6px; } .login-header h1{ margin:0; font-size:22px; font-weight:700; } .login-header p{ margin:4px 0 16px; font-size:13px; opacity:.7; } .start-btn{ width:160px; margin:0 auto; border-radius:30px; } .card{ margin-top:20px; animation:slideUp .4s ease; } .hidden{ display:none; } .age-wrap{ display:flex; justify-content:space-between; font-weight: bold; font-size:14px; opacity:.8; margin-top:10px; } @keyframes fadeUp{ from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} } @keyframes slideUp{ from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} } .card-header{ text-align:center; margin-bottom:14px; } .card-header h2{ margin:0; font-size:18px; font-weight:700; } .card-header p{ margin:4px 0 0; font-size:12px; opacity:.7; } #partnerStatus { transition: color 0.3s; font-style: italic; } .status-online { color: #25D366; font-weight: bold; } .status-offline { color: #FF4D4D; font-weight: bold; } .status-typing { color: #FFD700; font-weight: bold; } </style>
+<style>
+#videoScreen video{
+  width:100%; height:100%; object-fit:cover;
+}
+.local{
+  position:absolute; bottom:90px; right:10px;
+  width:100px; border-radius:12px;
+}
+.video-controls{
+  position:absolute; bottom:20px; left:50%;
+  transform:translateX(-50%);
+  display:flex; gap:14px;
+}
+.video-controls i{
+  font-size:22px; background:#202c33;
+  padding:12px; border-radius:50%;
+}
+.modal{
+  position:fixed; inset:0;
+  background:rgba(0,0,0,.7);
+  display:none; justify-content:center; align-items:center;
+  z-index:20;
+}
+.modal-box{
+  background:#202c33;
+  padding:20px;
+  border-radius:16px;
+  width:80%;
+  max-width:300px;
+  text-align:center;
+}
+.modal-box button{
+  width:100%; margin-top:10px;
+}
 
+</style>
 <div class="screen" id="login">
   <div class="login-header" id="loginHeader">
     <div class="logo">💬</div>
@@ -72,6 +107,7 @@
     <div id="partnerStatus" style="font-size:12px;opacity:0.6;height:14px;">Online</div>
   </div>
 <div class="icons">
+  <i class="bi bi-camera-video-fill" onclick="callUser()" id="videoCallBtn"></i>
   <i class="bi bi-arrow-clockwise" id="refreshBtn" onclick="refreshChat()" style="display:none"></i>
   <i class="bi bi-person-circle" onclick="openProfile()"></i>
   <i class="bi bi-box-arrow-right" onclick="logout()"></i>
@@ -84,6 +120,28 @@
     <input id="msg" placeholder="Pesan..."
       onkeydown="if(event.key==='Enter')sendMessage()">
     <button onclick="sendMessage()">➤</button>
+  </div>
+</div>
+
+<div id="videoScreen" class="modal">
+  <video id="remoteVideo" autoplay playsinline></video>
+  <video id="localVideo" autoplay muted playsinline class="local"></video>
+
+  <div class="video-controls">
+    <i class="bi bi-mic-fill" onclick="toggleMic()" id="micBtn"></i>
+    <i class="bi bi-camera-video-fill" onclick="toggleCam()" id="camBtn"></i>
+    <i class="bi bi-arrow-repeat" onclick="switchCamera()"></i>
+    <span id="signal">🟢</span>
+    <i class="bi bi-telephone-x-fill" onclick="endCall()"></i>
+  </div>
+</div>
+
+<div id="incomingCall" class="modal">
+  <div class="modal-box">
+    <h3>Panggilan Masuk</h3>
+    <p id="callerName"></p>
+    <button onclick="acceptCall()">Terima</button>
+    <button onclick="rejectCall()" style="background:#ff4d4d">Tolak</button>
   </div>
 </div>
 
@@ -163,22 +221,10 @@ socket.on("typing", () => {
   }, 2000);
 });
 
-socket.on("typing", () => {
-  if(socket.partner) {
-    socket.partner.emit("typing");
-  }
-});
-
 socket.on("partner-left", () => {
   setStatus("Offline");
   disableChat();
   refreshBtn.style.display = "inline-block"; 
-});
-
-socket.on("disconnect", () => {
-  if(socket.partner){
-    socket.partner.emit("partner-left");
-  }
 });
 
 function refreshChat(){
@@ -253,7 +299,141 @@ function timeNow(){
   return d.getHours().toString().padStart(2,"0")+":"+
          d.getMinutes().toString().padStart(2,"0");
 }
-function logout(){location.reload();}
 </script>
+<script>
+let pc, localStream, isFront=true;
+
+const ice = { iceServers:[{urls:"stun:stun.l.google.com:19302"}] };
+
+function callUser(){
+  if(!partner || pc) return;
+  socket.emit("call-user");
+}
+
+async function createOffer(){
+  if(!pc) return;
+  const offer = await pc.createOffer();
+  await pc.setLocalDescription(offer);
+  socket.emit("offer", offer);
+}
+
+socket.on("call-accepted", async ()=>{
+  await startMedia();
+  await createOffer();
+});
+
+socket.on("incoming-call", data=>{
+  callerName.innerText = data.name;
+  incomingCall.style.display="flex";
+});
+
+socket.on("offer", async offer=>{
+  if(!pc) await startMedia();
+  await pc.setRemoteDescription(new RTCSessionDescription(offer));
+  const answer = await pc.createAnswer();
+  await pc.setLocalDescription(answer);
+  socket.emit("answer", answer);
+});
+
+socket.on("answer", async answer=>{
+  await pc.setRemoteDescription(new RTCSessionDescription(answer));
+});
+
+socket.on("ice", async candidate=>{
+  if(candidate) await pc.addIceCandidate(candidate);
+});
+
+socket.on("end-call", () => {
+  if(pc) pc.close();
+  if(localStream){
+    localStream.getTracks().forEach(t=>t.stop());
+    localStream=null;
+  }
+  pc=null;
+  videoScreen.style.display="none";
+});
+
+socket.on("call-rejected", ()=>{
+  alert("Panggilan ditolak");
+});
+
+async function acceptCall(){
+  incomingCall.style.display="none";
+  await startMedia();
+  socket.emit("accept-call");
+}
+
+function rejectCall(){
+  incomingCall.style.display="none";
+  socket.emit("reject-call");
+}
+
+async function startMedia(){
+  if(localStream) return;
+
+  localStream = await navigator.mediaDevices.getUserMedia({
+    video:{ facingMode:isFront ? "user" : "environment" },
+    audio:true
+  });
+
+  localVideo.srcObject = localStream;
+  videoScreen.style.display = "flex";
+
+  pc = new RTCPeerConnection(ice);
+  localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
+
+  pc.ontrack = e => remoteVideo.srcObject = e.streams[0];
+  pc.onicecandidate = e => e.candidate && socket.emit("ice", e.candidate);
+  pc.onconnectionstatechange = checkSignal;
+}
+
+function toggleMic(){
+  const t=localStream.getAudioTracks()[0];
+  t.enabled=!t.enabled;
+}
+
+function toggleCam(){
+  const t=localStream.getVideoTracks()[0];
+  t.enabled=!t.enabled;
+}
+
+async function switchCamera(){
+  isFront=!isFront;
+  if(localStream){
+    localStream.getTracks().forEach(t=>t.stop());
+    localStream=null;
+  }
+  await startMedia();
+}
+
+function endCall(){
+  if(pc) pc.close();
+  if(localStream){
+    localStream.getTracks().forEach(t=>t.stop());
+    localStream = null;
+  }
+  pc = null;
+  videoScreen.style.display="none";
+  socket.emit("end-call");
+}
+
+function checkSignal(){
+  const s=pc.connectionState;
+  if(s==="connected") signal.textContent="🟢";
+  if(s==="disconnected") signal.textContent="🟡";
+  if(s==="failed"){
+    signal.textContent="🔴";
+    startReconnect();
+  }
+}
+
+function startReconnect(){
+  signal.textContent="🔴";
+  reconnectTimer=setTimeout(()=>{
+    endCall();
+  },60000);
+}
+</script>
+
 </body>
 </html>
