@@ -227,6 +227,13 @@
   <span id="netRight">HD</span>
 </div>
 
+<div id="waitingModal" class="modal">
+  <div class="modal-box">
+    <div class="loader"></div>
+    <p>Menunggu partner menerima panggilan...</p>
+  </div>
+</div>
+
 <script>
 const socket = io("https://chat-jsb8.onrender.com");
 let partner = null;
@@ -381,19 +388,37 @@ let callPending = false; // menandai pengirim menunggu penerima
 // Pengirim memulai panggilan
 function callUser(){
   if(!partner || callPending) return;
+
   callPending = true;
+  waitingModal.style.display = "flex";
+
   socket.emit("call-user", { name: partner.name });
-  alert("Menunggu penerima menerima panggilan...");
+
+  // timeout 1 menit
+  window.callTimeout = setTimeout(()=>{
+    waitingModal.style.display = "none";
+    callPending = false;
+    alert("Panggilan tidak dijawab");
+  }, 60000);
 }
 
 socket.on("call-accepted", async () => {
+  clearTimeout(window.callTimeout);
+  waitingModal.style.display = "none";
   callPending = false;
-  await startMedia();      // ambil kamera & mic
-  createPeer();            // buat PeerConnection
-  localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+
+  await startMedia();
+  createPeer();
+
+  localStream.getTracks().forEach(t =>
+    pc.addTrack(t, localStream)
+  );
+
   const offer = await pc.createOffer();
   await pc.setLocalDescription(offer);
   socket.emit("offer", offer);
+
+  videoScreen.style.display = "flex";
 });
 
 socket.on("incoming-call", data => {
@@ -403,10 +428,16 @@ socket.on("incoming-call", data => {
 
 async function acceptCall(){
   incomingCall.style.display = "none";
-  await startMedia();       // ambil kamera & mic
-  createPeer();             // buat PeerConnection
-  localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
-  socket.emit("accept-call"); // beri tahu pengirim
+
+  await startMedia();
+  createPeer();
+
+  localStream.getTracks().forEach(t =>
+    pc.addTrack(t, localStream)
+  );
+
+  socket.emit("accept-call");
+  videoScreen.style.display = "flex";
 }
 
 async function createOffer(){
@@ -418,9 +449,12 @@ async function createOffer(){
 
 socket.on("offer", async offer => {
   if(!pc) createPeer();
+
   await pc.setRemoteDescription(offer);
+
   const answer = await pc.createAnswer();
   await pc.setLocalDescription(answer);
+
   socket.emit("answer", answer);
 });
 
@@ -461,9 +495,9 @@ socket.on("end-call", () => {
 });
 
 socket.on("call-rejected", ()=>{
-  alert("Panggilan ditolak");
-  document.querySelector(".net-status").style.display = "none";
-  videoScreen.style.display = "none";
+  clearTimeout(window.callTimeout);
+  waitingModal.style.display = "none";
+  callPending = false;
 });
 
 function rejectCall(){
