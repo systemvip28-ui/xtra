@@ -536,6 +536,15 @@ socket.on("incoming-call", data => {
   callerName.innerText = data.name;
   callName.innerText = data.name; 
   incomingCall.style.display = "flex";
+
+  if (window.incomingTimeout) clearTimeout(window.incomingTimeout);
+  window.incomingTimeout = setTimeout(() => {
+    if (incomingCall.style.display === "flex") {
+      incomingCall.style.display = "none";
+      socket.emit("reject-call"); 
+      showAlert(`${data.name} tidak dijawab`);
+    }
+  }, 30000);
 });
 
 async function acceptCall() {
