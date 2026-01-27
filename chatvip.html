@@ -214,8 +214,8 @@
     <div id="partnerStatus" style="font-size:12px;opacity:0.6;height:14px;">Online</div>
   </div>
 <div class="icons">
-  <i class="bi bi-camera-video-fill" onclick="callUser()" id="videoCallBtn"></i>
   <i class="bi bi-arrow-clockwise" id="refreshBtn" onclick="refreshChat()" style="display:none"></i>
+  <i class="bi bi-camera-video-fill" onclick="callUser()" id="videoCallBtn"></i>
   <i class="bi bi-person-circle" onclick="openProfile()"></i>
   <i class="bi bi-box-arrow-right" onclick="logout()"></i>
 </div>
@@ -293,6 +293,13 @@
   </div>
 </div>
 
+<div id="alertModal" class="modal">
+  <div class="modal-box">
+    <p id="alertText" style="font-size:14px;"></p>
+    <button onclick="closeAlert()">Tutup</button>
+  </div>
+</div>
+
 <script>
 // ================== SOCKET CHAT ==================
 const socket = io("https://chat-jsb8.onrender.com");
@@ -315,6 +322,15 @@ function start() {
 
   login.style.display = "none";
   searching.style.display = "flex";
+}
+
+function showAlert(text) {
+  alertText.innerText = text;
+  alertModal.style.display = "flex";
+}
+
+function closeAlert() {
+  alertModal.style.display = "none";
 }
 
 function showForm() {
@@ -397,6 +413,7 @@ function logout() {
   login.style.display = "flex";
   partner = null;
   msg.value = "";
+  location.reload();
 }
 
 function sendMessage() {
@@ -501,10 +518,11 @@ function callUser() {
   socket.emit("call-user", { name: partner.name });
 
   window.callTimeout = setTimeout(() => {
-    waitingModal.style.display = "none";
-    callPending = false;
-    alert(`${partner.name} tidak menjawab panggilan`);
-  }, 40000);
+  waitingModal.style.display = "none";      
+  incomingCall.style.display = "none";    
+  callPending = false;
+  showAlert(`${partner.name} tidak menjawab panggilan`);
+}, 40000);
 }
 
 socket.on("incoming-call", data => {
@@ -618,7 +636,7 @@ async function startMedia() {
     localVideo.style.transform = "scaleX(1)"; 
     await localVideo.play();
   } catch (err) {
-    alert("Kamera / mikrofon tidak diizinkan");
+    showAlert("Kamera / mikrofon tidak diizinkan");
     console.error(err);
   }
 }
