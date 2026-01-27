@@ -508,7 +508,7 @@ function callUser(){
   callPending = true;
   waitingModal.style.display = "flex";
 
-  socket.emit("call-user", { name: partner.name });
+  socket.emit("call-user", { to: partner.socketId });
 
   // timeout 1 menit
   window.callTimeout = setTimeout(()=>{
