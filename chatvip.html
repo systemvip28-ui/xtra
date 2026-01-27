@@ -18,43 +18,8 @@
   flex-direction:column;
   z-index:30;
 }
-
-.local-wrap{
-  position:absolute;
-  bottom:12px;
-  right:12px;
-  width:120px;
-  height:170px;
-  border-radius:12px;
-  overflow:hidden;
-  background:#000;
-}
-
-.local-wrap video{
-  width:100%;
-  height:100%;
-  object-fit:cover;
-  transform: scaleX(-1); /* FIX mirror */
-}
-
-.media-overlay{
-  position:absolute;
-  inset:0;
-  display:flex;
-  flex-direction:column;
-  justify-content:center;
-  align-items:center;
-  gap:8px;
-  background:rgba(0,0,0,.45);
-  color:#fff;
-  font-size:22px;
-  display:none;
-}
-
-.media-overlay i{
-  background:rgba(0,0,0,.6);
-  padding:8px;
-  border-radius:50%;
+#localVideo{
+  transform: none;
 }
 
 .video-header{
@@ -124,13 +89,6 @@
 }
 .modal-box button{
   width:100%; margin-top:10px;
-}
-.signal-box{
-  display:flex;
-  align-items:center;
-  gap:6px;
-  font-size:12px;
-  opacity:.85;
 }
 
 .net-status{
@@ -228,25 +186,15 @@
 </div>
 
 <div id="videoScreen" class="video-wrap">
-<div class="video-header">
-  <span id="callName">Video Call</span>
-
-  <div class="signal-box">
-    <span id="signalDot">🟢</span>
-    <span id="netLeft">Stabil</span>
+  <div class="video-header">
+    <span id="callName">Video Call</span>
+    <i class="bi bi-x-lg" onclick="endCall()"></i>
   </div>
-</div>
 
   <div class="video-body">
     <video id="remoteVideo" autoplay playsinline></video>
-<div class="pip local-wrap">
-  <video id="localVideo" autoplay muted playsinline></video>
-
-  <div class="media-overlay" id="localOverlay">
-    <i id="micStatus" class="bi bi-mic-mute-fill"></i>
-    <i id="camStatus" class="bi bi-camera-video-off-fill"></i>
+    <video id="localVideo" autoplay muted playsinline class="pip"></video>
   </div>
-</div>
 
   <div class="video-footer">
     <i id="micBtn" class="bi bi-mic-fill" onclick="toggleMic()"></i>
@@ -492,22 +440,6 @@ function dragElement(el){
 dragElement(document.getElementById("localVideo"));
 dragElement(document.getElementById("remoteVideo"));
 
-function updateLocalOverlay(){
-  if(!localStream) return;
-
-  const micOn = localStream.getAudioTracks()[0]?.enabled;
-  const camOn = localStream.getVideoTracks()[0]?.enabled;
-
-  const overlay = document.getElementById("localOverlay");
-  const micIcon = document.getElementById("micStatus");
-  const camIcon = document.getElementById("camStatus");
-
-  micIcon.style.display = micOn ? "none" : "block";
-  camIcon.style.display = camOn ? "none" : "block";
-
-  overlay.style.display = (!micOn || !camOn) ? "flex" : "none";
-}
-
 function callUser(){
   if(!partner || callPending) return;
 
@@ -662,11 +594,11 @@ function toggleMic(){
   const t = localStream.getAudioTracks()[0];
   t.enabled = !t.enabled;
 
-  micBtn.className = t.enabled
-    ? "bi bi-mic-fill"
+  micBtn.className = t.enabled 
+    ? "bi bi-mic-fill" 
     : "bi bi-mic-mute-fill";
 
-  updateLocalOverlay();
+  socket.emit("media-status",{ mic:t.enabled });
 }
 
 function toggleCam(){
@@ -678,7 +610,7 @@ function toggleCam(){
     ? "bi bi-camera-video-fill"
     : "bi bi-camera-video-off-fill";
 
-  updateLocalOverlay();
+  socket.emit("media-status",{ cam:t.enabled });
 }
 
 async function switchCamera(){
