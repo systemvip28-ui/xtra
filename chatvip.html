@@ -18,9 +18,6 @@
   flex-direction:column;
   z-index:30;
 }
-#localVideo{
-  transform: none;
-}
 
 .video-header{
   height:56px;
@@ -89,6 +86,13 @@
 }
 .modal-box button{
   width:100%; margin-top:10px;
+}
+.signal-box{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  font-size:12px;
+  opacity:.85;
 }
 
 .net-status{
@@ -186,15 +190,24 @@
 </div>
 
 <div id="videoScreen" class="video-wrap">
-  <div class="video-header">
-    <span id="callName">Video Call</span>
-    <i class="bi bi-x-lg" onclick="endCall()"></i>
+<div class="video-header">
+  <span id="callName">Video Call</span>
+
+  <div class="signal-box">
+    <span id="signalDot">🟢</span>
+    <span id="netLeft">Stabil</span>
   </div>
+</div>
 
   <div class="video-body">
     <video id="remoteVideo" autoplay playsinline></video>
-    <video id="localVideo" autoplay muted playsinline class="pip"></video>
+  <video id="localVideo" autoplay muted playsinline></video>
+
+  <div class="media-overlay" id="localOverlay">
+    <i id="micStatus" class="bi bi-mic-mute-fill"></i>
+    <i id="camStatus" class="bi bi-camera-video-off-fill"></i>
   </div>
+</div>
 
   <div class="video-footer">
     <i id="micBtn" class="bi bi-mic-fill" onclick="toggleMic()"></i>
@@ -440,6 +453,22 @@ function dragElement(el){
 dragElement(document.getElementById("localVideo"));
 dragElement(document.getElementById("remoteVideo"));
 
+function updateLocalOverlay(){
+  if(!localStream) return;
+
+  const micOn = localStream.getAudioTracks()[0]?.enabled;
+  const camOn = localStream.getVideoTracks()[0]?.enabled;
+
+  const overlay = document.getElementById("localOverlay");
+  const micIcon = document.getElementById("micStatus");
+  const camIcon = document.getElementById("camStatus");
+
+  micIcon.style.display = micOn ? "none" : "block";
+  camIcon.style.display = camOn ? "none" : "block";
+
+  overlay.style.display = (!micOn || !camOn) ? "flex" : "none";
+}
+
 function callUser(){
   if(!partner || callPending) return;
 
@@ -594,11 +623,11 @@ function toggleMic(){
   const t = localStream.getAudioTracks()[0];
   t.enabled = !t.enabled;
 
-  micBtn.className = t.enabled 
-    ? "bi bi-mic-fill" 
+  micBtn.className = t.enabled
+    ? "bi bi-mic-fill"
     : "bi bi-mic-mute-fill";
 
-  socket.emit("media-status",{ mic:t.enabled });
+  updateLocalOverlay();
 }
 
 function toggleCam(){
@@ -610,7 +639,7 @@ function toggleCam(){
     ? "bi bi-camera-video-fill"
     : "bi bi-camera-video-off-fill";
 
-  socket.emit("media-status",{ cam:t.enabled });
+  updateLocalOverlay();
 }
 
 async function switchCamera(){
