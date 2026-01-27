@@ -518,12 +518,16 @@ function callUser() {
   socket.emit("call-user", { name: partner.name });
 
   window.callTimeout = setTimeout(() => {
-  waitingModal.style.display = "none";      
-  incomingCall.style.display = "none";    
-  callPending = false;
-  showAlert(`${partner.name} tidak menjawab panggilan`);
-}, 40000);
+    waitingModal.style.display = "none";      
+    callPending = false;
+    showAlert(`${partner.name} tidak menjawab panggilan`);
+    socket.emit("cancel-call");
+  }, 30000);
 }
+
+socket.on("cancel-call", () => {
+  incomingCall.style.display = "none";
+});
 
 socket.on("incoming-call", data => {
   callerName.innerText = data.name;
