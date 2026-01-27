@@ -428,245 +428,157 @@ function timeNow(){
 }
 </script>
 <script>
-/* ===================== GLOBAL ===================== */
-let pc = null;
-let localStream = null;
-let isFront = true;
-let callPending = false;
-let isSwapped = false;
+let pc=null, localStream=null, isFront=true, callPending=false;
+let isSwapped=false;
 
-const ice = {
-  iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
-};
+const ice={ iceServers:[{urls:"stun:stun.l.google.com:19302"}] };
 
-/* ===================== LOADING OVERLAY ===================== */
-const loading = document.createElement("div");
-loading.style.cssText = `
-  position:absolute; inset:0;
-  display:flex; align-items:center; justify-content:center;
-  background:#000; color:#fff;
-  font-size:14px; z-index:50
-`;
-loading.innerHTML = "Menghubungkan video…";
+/* ========= UI ========= */
+const loading=document.createElement("div");
+loading.style.cssText=`
+position:absolute;inset:0;display:flex;
+align-items:center;justify-content:center;
+background:#000;color:#fff;z-index:50`;
+loading.innerHTML="📡 Menghubungkan video…";
 
-/* ===================== CLEANUP ===================== */
-function cleanupCall(){
-  if(pc){
-    pc.close();
-    pc = null;
-  }
-
-  if(localStream){
-    localStream.getTracks().forEach(t=>t.stop());
-    localStream = null;
-  }
-
-  remoteVideo.srcObject = null;
-  localVideo.srcObject = null;
-  remoteOverlay.style.display="none";
-  loading.remove();
-  isSwapped = false;
-  resetLayout();
-}
-
-/* ===================== MEDIA ===================== */
-async function startMedia(){
-  if(localStream) return;
-
-  localStream = await navigator.mediaDevices.getUserMedia({
-    video:{
-      facingMode: isFront ? "user" : "environment",
-      width:{ ideal:1280 },
-      height:{ ideal:720 },
-      frameRate:{ ideal:30 }
-    },
-    audio:true
-  });
-
-  localVideo.srcObject = localStream;
-  localVideo.muted = true;
-  await localVideo.play();
-}
-
-/* ===================== PEER ===================== */
-function createPeer(){
-  if(pc) return;
-
-  pc = new RTCPeerConnection(ice);
-
-  pc.ontrack = e=>{
-    remoteVideo.srcObject = e.streams[0];
-
-    // tunggu video benar2 render
-    remoteVideo.onplaying = ()=>{
-      loading.remove();
-    };
-  };
-
-  pc.onicecandidate = e=>{
-    if(e.candidate) socket.emit("ice", e.candidate);
-  };
-
-  pc.onconnectionstatechange = checkSignal;
-}
-
-function addTracks(){
-  localStream.getTracks().forEach(t=>pc.addTrack(t, localStream));
-}
-
-/* ===================== CALL ===================== */
-function callUser(){
-  if(!partner || callPending) return;
-  callPending = true;
-
-  waitingModal.style.display="flex";
-  socket.emit("call-user",{ name:partner.name });
-
-  window.callTimeout = setTimeout(()=>{
-    waitingModal.style.display="none";
-    callPending=false;
-    alert("Panggilan tidak dijawab");
-  },60000);
-}
-
-socket.on("call-accepted", async ()=>{
-  waitingModal.style.display="none";
-  callPending=false;
-
-  await startMedia();
-  createPeer();
-  addTracks();
-
-  const offer = await pc.createOffer();
-  await pc.setLocalDescription(offer);
-  socket.emit("offer",offer);
-
-  showVideoScreen();
-});
-
-/* ===================== ACCEPT ===================== */
-socket.on("incoming-call", d=>{
-  callerName.innerText = d.name;
-  incomingCall.style.display="flex";
-});
-
-async function acceptCall(){
-  incomingCall.style.display="none";
-
-  await startMedia();
-  createPeer();
-  addTracks();
-
-  socket.emit("accept-call");
-  showVideoScreen();
-}
-
-/* ===================== SIGNAL ===================== */
-socket.on("offer", async offer=>{
-  await startMedia();
-
-  if(!pc){
-    createPeer();
-    addTracks();
-  }
-
-  await pc.setRemoteDescription(offer);
-
-  const answer = await pc.createAnswer();
-  await pc.setLocalDescription(answer);
-  socket.emit("answer",answer);
-});
-
-socket.on("answer", async ans=>{
-  if(pc) await pc.setRemoteDescription(ans);
-});
-
-socket.on("ice", async c=>{
-  if(pc && c) await pc.addIceCandidate(c);
-});
-
-/* ===================== UI ===================== */
 function showVideoScreen(){
   videoScreen.style.display="flex";
   videoScreen.querySelector(".video-body").appendChild(loading);
 }
 
-/* ===================== SWAP VIDEO ===================== */
-localVideo.onclick = remoteVideo.onclick = ()=>{
-  isSwapped = !isSwapped;
-
-  if(isSwapped){
-    localVideo.style.cssText = `
-      position:absolute; inset:0;
-      width:100%; height:100%;
-      z-index:1; transform:scaleX(-1)
-    `;
-    remoteVideo.style.cssText = `
-      position:absolute;
-      width:120px; height:170px;
-      bottom:90px; right:12px;
-      z-index:10
-    `;
-  }else{
-    resetLayout();
+/* ========= CLEAN ========= */
+function cleanup(){
+  if(pc){ pc.close(); pc=null; }
+  if(localStream){
+    localStream.getTracks().forEach(t=>t.stop());
+    localStream=null;
   }
+  remoteVideo.srcObject=null;
+  localVideo.srcObject=null;
+  loading.remove();
+  resetLayout();
+}
+
+/* ========= MEDIA ========= */
+async function startMedia(){
+  if(localStream) return;
+  localStream=await navigator.mediaDevices.getUserMedia({
+    video:{facingMode:isFront?"user":"environment",width:{ideal:1280},height:{ideal:720}},
+    audio:true
+  });
+  localVideo.srcObject=localStream;
+  localVideo.muted=true;
+  await localVideo.play();
+}
+
+/* ========= PEER ========= */
+function createPeer(){
+  if(pc) return;
+  pc=new RTCPeerConnection(ice);
+
+  pc.ontrack=e=>{
+    remoteVideo.srcObject=e.streams[0];
+    remoteVideo.onplaying=()=>loading.remove();
+  };
+
+  pc.onicecandidate=e=>{
+    if(e.candidate) socket.emit("ice",e.candidate);
+  };
+
+  pc.onconnectionstatechange=checkSignal;
+}
+
+function addTracks(){
+  localStream.getTracks().forEach(t=>pc.addTrack(t,localStream));
+}
+
+/* ========= CALLER ========= */
+function callUser(){
+  if(!partner||callPending) return;
+  callPending=true;
+  waitingModal.style.display="flex";
+  socket.emit("call-user",{name:partner.name});
+
+  window.callTimeout=setTimeout(()=>{
+    waitingModal.style.display="none";
+    callPending=false;
+    cleanup();
+    alert("Panggilan tidak dijawab");
+  },60000);
+}
+
+socket.on("call-accepted",async()=>{
+  clearTimeout(window.callTimeout);
+  waitingModal.style.display="none";
+  callPending=false;
+
+  await startMedia();
+  showVideoScreen();
+  createPeer();
+  addTracks();
+
+  const offer=await pc.createOffer();
+  await pc.setLocalDescription(offer);
+  socket.emit("offer",offer);
+});
+
+/* ========= CALLEE ========= */
+socket.on("incoming-call",d=>{
+  callerName.innerText=d.name;
+  incomingCall.style.display="flex";
+});
+
+async function acceptCall(){
+  incomingCall.style.display="none";
+  await startMedia();
+  showVideoScreen();
+  createPeer();
+  addTracks();
+  socket.emit("accept-call");
+}
+
+/* ========= SIGNAL ========= */
+socket.on("offer",async offer=>{
+  await startMedia();
+  if(!pc){ createPeer(); addTracks(); }
+  await pc.setRemoteDescription(offer);
+  const ans=await pc.createAnswer();
+  await pc.setLocalDescription(ans);
+  socket.emit("answer",ans);
+});
+
+socket.on("answer",a=>pc&&pc.setRemoteDescription(a));
+socket.on("ice",c=>pc&&c&&pc.addIceCandidate(c));
+
+/* ========= SWAP ========= */
+localVideo.onclick=remoteVideo.onclick=()=>{
+  isSwapped=!isSwapped;
+  if(isSwapped){
+    localVideo.style.cssText="position:absolute;inset:0;width:100%;height:100%;z-index:1;transform:scaleX(-1)";
+    remoteVideo.style.cssText="position:absolute;width:120px;height:170px;bottom:90px;right:12px;z-index:10";
+  }else resetLayout();
 };
 
 function resetLayout(){
-  localVideo.style.cssText = `
-    position:absolute;
-    width:120px; height:170px;
-    bottom:90px; right:12px;
-    z-index:10; transform:scaleX(-1)
-  `;
-  remoteVideo.style.cssText = `
-    position:absolute; inset:0;
-    width:100%; height:100%;
-    z-index:1
-  `;
+  localVideo.style.cssText="position:absolute;width:120px;height:170px;bottom:90px;right:12px;z-index:10;transform:scaleX(-1)";
+  remoteVideo.style.cssText="position:absolute;inset:0;width:100%;height:100%;z-index:1";
 }
 
-/* ===================== CONTROLS ===================== */
-function toggleMic(){
-  const t = localStream.getAudioTracks()[0];
-  t.enabled = !t.enabled;
-  micBtn.className = t.enabled?"bi bi-mic-fill":"bi bi-mic-mute-fill";
-  socket.emit("media-status",{ mic:t.enabled, cam:localStream.getVideoTracks()[0].enabled });
-}
-
-function toggleCam(){
-  const t = localStream.getVideoTracks()[0];
-  t.enabled = !t.enabled;
-  camBtn.className = t.enabled?"bi bi-camera-video-fill":"bi bi-camera-video-off-fill";
-  socket.emit("media-status",{ mic:localStream.getAudioTracks()[0].enabled, cam:t.enabled });
-}
-
-async function switchCamera(){
-  isFront=!isFront;
-  localStream.getTracks().forEach(t=>t.stop());
-  localStream=null;
-  await startMedia();
-
-  const sender = pc.getSenders().find(s=>s.track.kind==="video");
-  if(sender) sender.replaceTrack(localStream.getVideoTracks()[0]);
-}
-
-/* ===================== END ===================== */
+/* ========= END ========= */
 function endCall(){
-  cleanupCall();
+  cleanup();
   videoScreen.style.display="none";
   socket.emit("end-call");
 }
+socket.on("end-call",endCall);
 
-socket.on("end-call", endCall);
-
-/* ===================== SIGNAL ===================== */
+/* ========= SIGNAL ========= */
 function checkSignal(){
   if(!pc) return;
-  const s = pc.connectionState;
-  if(s==="connected"){ signalDot.textContent="🟢"; netLeft.textContent="Stabil"; }
-  if(s==="disconnected"){ signalDot.textContent="🟡"; netLeft.textContent="Lemah"; }
-  if(s==="failed"){ signalDot.textContent="🔴"; netLeft.textContent="Terputus"; }
+  const s=pc.connectionState;
+  if(s==="connected"){signalDot.textContent="🟢";netLeft.textContent="Stabil";}
+  if(s==="disconnected"){signalDot.textContent="🟡";netLeft.textContent="Lemah";}
+  if(s==="failed"){signalDot.textContent="🔴";netLeft.textContent="Terputus";}
 }
 </script>
 </body>
