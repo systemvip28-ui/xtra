@@ -39,11 +39,10 @@
   background:#000;
 }
 
-.video-body video {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;  
-  background: #000;     
+.video-body video { 
+  width: 100%; 
+  height: 100%; 
+  object-fit: cover; 
 }
 
 .video-body .pip{ position:absolute; bottom:12px; right:12px; width:110px; height:160px; border-radius:12px; border:2px solid #111; background:#000; }
@@ -191,13 +190,10 @@
 </div>
 
 <div id="videoScreen" class="video-wrap">
-<div class="video-header">
-  <div id="videoCallInfo">
+  <div class="video-header">
     <span id="callName">Video Call</span>
-    <span id="signalStatus" style="font-size:12px; opacity:0.6;">🟢 Stabil</span>
+    <span id="signalStatus" style="font-size:12px; opacity:0.8;">🟢 Stabil</span>
   </div>
-  <i class="bi bi-person-circle" onclick="openProfile()"></i>
-</div>
 
   <div class="video-body">
     <video id="remoteVideo" autoplay playsinline></video>
