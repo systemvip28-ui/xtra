@@ -274,6 +274,12 @@
   </div>
 </div>
 
+<div class="net-status">
+  <span id="netLeft">Stabil</span>
+  <span id="signalDot">🟢</span>
+  <span id="netRight">HD</span>
+</div>
+
 <div id="waitingModal" class="modal">
   <div class="modal-box">
     <div class="loader"></div>
@@ -483,7 +489,7 @@ function dragElement(el){
   }
 }
 
-dragElement(document.querySelector(".local-wrap"));
+dragElement(document.getElementById("localVideo"));
 dragElement(document.getElementById("remoteVideo"));
 
 function updateLocalOverlay(){
@@ -508,7 +514,7 @@ function callUser(){
   callPending = true;
   waitingModal.style.display = "flex";
 
-  socket.emit("call-user", { to: partner.socketId });
+  socket.emit("call-user", { name: partner.name });
 
   // timeout 1 menit
   window.callTimeout = setTimeout(()=>{
@@ -584,31 +590,15 @@ socket.on("ice", async candidate => {
 
 function createPeer(){
   if(pc) return;
-
   pc = new RTCPeerConnection(ice);
-
   pc.ontrack = e => {
     remoteVideo.srcObject = e.streams[0];
     videoScreen.style.display = "flex";
   };
-
   pc.onicecandidate = e => {
     if(e.candidate) socket.emit("ice", e.candidate);
   };
-
   pc.onconnectionstatechange = checkSignal;
-
-  // 🔥 PAKSA BITRATE HD
-  pc.oniceconnectionstatechange = () => {
-    pc.getSenders().forEach(sender=>{
-      if(sender.track?.kind === "video"){
-        const params = sender.getParameters();
-        if(!params.encodings) params.encodings = [{}];
-        params.encodings[0].maxBitrate = 2500000;
-        sender.setParameters(params);
-      }
-    });
-  };
 }
 
 socket.on("end-call", () => {
@@ -622,6 +612,8 @@ socket.on("end-call", () => {
   remoteVideo.srcObject = null;
   pc=null;
   videoScreen.style.display="none";
+
+  document.querySelector(".net-status").style.display = "none";
 });
 
 socket.on("call-rejected", ()=>{
@@ -642,9 +634,15 @@ async function startMedia(){
     localStream = await navigator.mediaDevices.getUserMedia({
       video:{
         facingMode: isFront ? "user" : "environment",
-        width:  { ideal: 1280 },
-        height: { ideal: 720 },
-        frameRate: { ideal: 30, max: 60 }
+
+        // ukuran ideal, bukan maksa
+        width:  { ideal: 720 },
+        height: { ideal: 1280 },
+
+        frameRate: { ideal: 30 },
+
+        // biar tidak terlalu dekat
+        resizeMode: "crop-and-scale"
       },
       audio:true
     });
@@ -652,8 +650,6 @@ async function startMedia(){
     localVideo.srcObject = localStream;
     localVideo.muted = true;
     await localVideo.play();
-
-    updateLocalOverlay();
 
   }catch(err){
     alert("Kamera / mikrofon tidak diizinkan");
