@@ -428,149 +428,167 @@ function timeNow(){
 }
 </script>
 <script>
-let pc=null, localStream=null, isFront=true, callPending=false;
-let isSwapped=false;
+/* ================= STATE ================= */
+let pc = null;
+let localStream = null;
+let isFront = true;
+let callState = "idle"; // idle | calling | connected
 
-const ice={ iceServers:[{urls:"stun:stun.l.google.com:19302"}] };
+const ice = { iceServers:[{urls:"stun:stun.l.google.com:19302"}] };
 
-/* ========= UI ========= */
-const loading=document.createElement("div");
-loading.style.cssText=`
-position:absolute;inset:0;display:flex;
-align-items:center;justify-content:center;
+/* ================= UI ================= */
+const loading = document.createElement("div");
+loading.style.cssText = `
+position:absolute;inset:0;
+display:flex;align-items:center;justify-content:center;
 background:#000;color:#fff;z-index:50`;
-loading.innerHTML="📡 Menghubungkan video…";
+loading.innerText = "Menghubungkan…";
 
-function showVideoScreen(){
+function showVideo(){
   videoScreen.style.display="flex";
   videoScreen.querySelector(".video-body").appendChild(loading);
 }
 
-/* ========= CLEAN ========= */
-function cleanup(){
-  if(pc){ pc.close(); pc=null; }
+/* ================= CLEAN ================= */
+function resetCall(){
+  callState="idle";
+
+  if(pc){
+    pc.ontrack = null;
+    pc.onicecandidate = null;
+    pc.close();
+    pc = null;
+  }
+
   if(localStream){
     localStream.getTracks().forEach(t=>t.stop());
     localStream=null;
   }
+
   remoteVideo.srcObject=null;
   localVideo.srcObject=null;
   loading.remove();
-  resetLayout();
 }
 
-/* ========= MEDIA ========= */
+/* ================= MEDIA ================= */
 async function startMedia(){
   if(localStream) return;
-  localStream=await navigator.mediaDevices.getUserMedia({
-    video:{facingMode:isFront?"user":"environment",width:{ideal:1280},height:{ideal:720}},
+
+  localStream = await navigator.mediaDevices.getUserMedia({
+    video:{
+      facingMode:isFront?"user":"environment",
+      width:{ideal:1280},
+      height:{ideal:720}
+    },
     audio:true
   });
-  localVideo.srcObject=localStream;
-  localVideo.muted=true;
+
+  localVideo.srcObject = localStream;
+  localVideo.muted = true;
   await localVideo.play();
 }
 
-/* ========= PEER ========= */
+/* ================= PEER ================= */
 function createPeer(){
   if(pc) return;
-  pc=new RTCPeerConnection(ice);
 
-  pc.ontrack=e=>{
-    remoteVideo.srcObject=e.streams[0];
-    remoteVideo.onplaying=()=>loading.remove();
+  pc = new RTCPeerConnection(ice);
+
+  pc.ontrack = e=>{
+    remoteVideo.srcObject = e.streams[0];
+    remoteVideo.onplaying = ()=>{
+      loading.remove();
+      callState="connected";
+    };
   };
 
-  pc.onicecandidate=e=>{
-    if(e.candidate) socket.emit("ice",e.candidate);
+  pc.onicecandidate = e=>{
+    if(e.candidate && callState!=="idle")
+      socket.emit("ice",e.candidate);
   };
-
-  pc.onconnectionstatechange=checkSignal;
 }
 
 function addTracks(){
   localStream.getTracks().forEach(t=>pc.addTrack(t,localStream));
 }
 
-/* ========= CALLER ========= */
+/* ================= CALLER ================= */
 function callUser(){
-  if(!partner||callPending) return;
-  callPending=true;
-  waitingModal.style.display="flex";
-  socket.emit("call-user",{name:partner.name});
+  if(callState!=="idle") return;
 
-  window.callTimeout=setTimeout(()=>{
-    waitingModal.style.display="none";
-    callPending=false;
-    cleanup();
-    alert("Panggilan tidak dijawab");
-  },60000);
+  resetCall();
+  callState="calling";
+
+  showVideo();              // 🔴 CALLER MASUK DULU
+  startMedia().then(()=>{
+    createPeer();
+    addTracks();
+    socket.emit("call-user",{name:partner.name});
+  });
 }
 
-socket.on("call-accepted",async()=>{
-  clearTimeout(window.callTimeout);
-  waitingModal.style.display="none";
-  callPending=false;
-
-  await startMedia();
-  showVideoScreen();
-  createPeer();
-  addTracks();
-
-  const offer=await pc.createOffer();
-  await pc.setLocalDescription(offer);
-  socket.emit("offer",offer);
-});
-
-/* ========= CALLEE ========= */
+/* ================= CALLEE ================= */
 socket.on("incoming-call",d=>{
+  if(callState!=="idle") return;
   callerName.innerText=d.name;
   incomingCall.style.display="flex";
 });
 
 async function acceptCall(){
   incomingCall.style.display="none";
+  resetCall();
+  callState="calling";
+
+  showVideo();
   await startMedia();
-  showVideoScreen();
   createPeer();
   addTracks();
+
   socket.emit("accept-call");
 }
 
-/* ========= SIGNAL ========= */
+/* ================= SIGNAL (DAFTAR SEKALI) ================= */
+socket.off("offer");
+socket.off("answer");
+socket.off("ice");
+socket.off("end-call");
+
 socket.on("offer",async offer=>{
-  await startMedia();
-  if(!pc){ createPeer(); addTracks(); }
+  if(callState==="idle") return;
+
+  if(!pc){
+    await startMedia();
+    createPeer();
+    addTracks();
+  }
+
   await pc.setRemoteDescription(offer);
-  const ans=await pc.createAnswer();
+  const ans = await pc.createAnswer();
   await pc.setLocalDescription(ans);
   socket.emit("answer",ans);
 });
 
-socket.on("answer",a=>pc&&pc.setRemoteDescription(a));
-socket.on("ice",c=>pc&&c&&pc.addIceCandidate(c));
+socket.on("answer",async ans=>{
+  if(pc && callState!=="idle")
+    await pc.setRemoteDescription(ans);
+});
 
-/* ========= SWAP ========= */
-localVideo.onclick=remoteVideo.onclick=()=>{
-  isSwapped=!isSwapped;
-  if(isSwapped){
-    localVideo.style.cssText="position:absolute;inset:0;width:100%;height:100%;z-index:1;transform:scaleX(-1)";
-    remoteVideo.style.cssText="position:absolute;width:120px;height:170px;bottom:90px;right:12px;z-index:10";
-  }else resetLayout();
-};
+socket.on("ice",async c=>{
+  if(pc && c && callState!=="idle")
+    await pc.addIceCandidate(c);
+});
 
-function resetLayout(){
-  localVideo.style.cssText="position:absolute;width:120px;height:170px;bottom:90px;right:12px;z-index:10;transform:scaleX(-1)";
-  remoteVideo.style.cssText="position:absolute;inset:0;width:100%;height:100%;z-index:1";
-}
-
-/* ========= END ========= */
-function endCall(){
-  cleanup();
+socket.on("end-call",()=>{
+  resetCall();
   videoScreen.style.display="none";
+});
+
+/* ================= END ================= */
+function endCall(){
   socket.emit("end-call");
+  resetCall();
+  videoScreen.style.display="none";
 }
-socket.on("end-call",endCall);
 
 /* ========= SIGNAL ========= */
 function checkSignal(){
