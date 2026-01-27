@@ -547,25 +547,44 @@ async function acceptCall(){
   socket.emit("accept-call");
 }
 
+socket.on("call-accepted", async ()=>{
+  waitingModal.style.display="none";
+
+  resetCall();
+  callState="calling";
+  showVideo();
+
+  await startMedia();
+  createPeer();
+
+  const offer = await pc.createOffer();
+  await pc.setLocalDescription(offer);
+
+  addTracks(); // 🔴 PINDAH KE SINI (SETELAH setLocalDescription)
+
+  socket.emit("offer", offer);
+});
+
 /* ================= SIGNAL (DAFTAR SEKALI) ================= */
 socket.off("offer");
 socket.off("answer");
 socket.off("ice");
 socket.off("end-call");
 
-socket.on("offer",async offer=>{
+socket.on("offer", async offer=>{
   if(callState==="idle") return;
 
-  if(!pc){
-    await startMedia();
-    createPeer();
-    addTracks();
-  }
+  await startMedia();
+  createPeer();
 
   await pc.setRemoteDescription(offer);
-  const ans = await pc.createAnswer();
-  await pc.setLocalDescription(ans);
-  socket.emit("answer",ans);
+
+  const answer = await pc.createAnswer();
+  await pc.setLocalDescription(answer);
+
+  addTracks(); 
+
+  socket.emit("answer", answer);
 });
 
 socket.on("answer",async ans=>{
@@ -582,6 +601,12 @@ socket.on("end-call",()=>{
   resetCall();
   videoScreen.style.display="none";
 });
+
+localVideo.onclick = ()=>{
+  const a = localVideo.srcObject;
+  localVideo.srcObject = remoteVideo.srcObject;
+  remoteVideo.srcObject = a;
+};
 
 /* ================= END ================= */
 function endCall(){
