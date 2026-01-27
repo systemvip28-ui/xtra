@@ -274,12 +274,6 @@
   </div>
 </div>
 
-<div class="net-status">
-  <span id="netLeft">Stabil</span>
-  <span id="signalDot">🟢</span>
-  <span id="netRight">HD</span>
-</div>
-
 <div id="waitingModal" class="modal">
   <div class="modal-box">
     <div class="loader"></div>
@@ -489,7 +483,7 @@ function dragElement(el){
   }
 }
 
-dragElement(document.getElementById("localVideo"));
+dragElement(document.querySelector(".local-wrap"));
 dragElement(document.getElementById("remoteVideo"));
 
 function updateLocalOverlay(){
@@ -590,27 +584,32 @@ socket.on("ice", async candidate => {
 
 function createPeer(){
   if(pc) return;
+
   pc = new RTCPeerConnection(ice);
+
   pc.ontrack = e => {
     remoteVideo.srcObject = e.streams[0];
     videoScreen.style.display = "flex";
   };
+
   pc.onicecandidate = e => {
     if(e.candidate) socket.emit("ice", e.candidate);
   };
+
   pc.onconnectionstatechange = checkSignal;
+
+  // 🔥 PAKSA BITRATE HD
+  pc.oniceconnectionstatechange = () => {
+    pc.getSenders().forEach(sender=>{
+      if(sender.track?.kind === "video"){
+        const params = sender.getParameters();
+        if(!params.encodings) params.encodings = [{}];
+        params.encodings[0].maxBitrate = 2500000;
+        sender.setParameters(params);
+      }
+    });
+  };
 }
-pc.oniceconnectionstatechange = () => {
-  const senders = pc.getSenders();
-  senders.forEach(sender=>{
-    if(sender.track && sender.track.kind === "video"){
-      const params = sender.getParameters();
-      if(!params.encodings) params.encodings = [{}];
-      params.encodings[0].maxBitrate = 2500000; // 2.5 Mbps
-      sender.setParameters(params);
-    }
-  });
-};
 
 socket.on("end-call", () => {
   if(pc) pc.close();
@@ -623,8 +622,6 @@ socket.on("end-call", () => {
   remoteVideo.srcObject = null;
   pc=null;
   videoScreen.style.display="none";
-
-  document.querySelector(".net-status").style.display = "none";
 });
 
 socket.on("call-rejected", ()=>{
@@ -639,19 +636,24 @@ function rejectCall(){
 }
 
 async function startMedia(){
-localStream = await navigator.mediaDevices.getUserMedia({
-  video:{
-    facingMode: isFront ? "user" : "environment",
-    width:  { ideal: 1280 },
-    height: { ideal: 720 },
-    frameRate: { ideal: 30, max: 60 }
-  },
-  audio:true
-});
+  if(localStream) return;
+
+  try{
+    localStream = await navigator.mediaDevices.getUserMedia({
+      video:{
+        facingMode: isFront ? "user" : "environment",
+        width:  { ideal: 1280 },
+        height: { ideal: 720 },
+        frameRate: { ideal: 30, max: 60 }
+      },
+      audio:true
+    });
 
     localVideo.srcObject = localStream;
     localVideo.muted = true;
     await localVideo.play();
+
+    updateLocalOverlay();
 
   }catch(err){
     alert("Kamera / mikrofon tidak diizinkan");
