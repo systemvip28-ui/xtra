@@ -549,16 +549,18 @@ async function startMedia() {
   try {
     localStream = await navigator.mediaDevices.getUserMedia({
       video: {
-        facingMode: isFront ? "user" : "environment",
-        width: { ideal: 720 },
-        height: { ideal: 1280 },
-        frameRate: { ideal: 30 },
+        facingMode: "user",
+        width: { ideal: 480 },   // resolusi lebih kecil, lebih normal
+        height: { ideal: 640 },
+        frameRate: { ideal: 30 }
+        // Hapus resizeMode
       },
       audio: true
     });
+
     localVideo.srcObject = localStream;
     localVideo.muted = true;
-    localVideo.style.transform = "scaleX(1)"; // jangan mirror
+    localVideo.style.transform = "scaleX(1)"; // pastikan tidak mirror
     await localVideo.play();
   } catch (err) {
     alert("Kamera / mikrofon tidak diizinkan");
