@@ -544,10 +544,15 @@ socket.on("incoming-call", data=>{
 
 async function acceptCall(){
   incomingCall.style.display="none";
+
   await startMedia();
+  createPeer();        // ✅ WAJIB
+  addTracks();         // ✅ WAJIB
+
   socket.emit("accept-call");
   videoScreen.style.display="flex";
 }
+
 
 function rejectCall(){
   incomingCall.style.display="none";
