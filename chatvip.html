@@ -108,9 +108,6 @@
   gap: 2px;
 }
 
-.reject-box h3 {
-  color: #ff4d4d;
-}
 .reject-box p {
   font-size: 14px;
   opacity: 0.8;
@@ -541,8 +538,6 @@ socket.on("incoming-call", data => {
   window.incomingTimeout = setTimeout(() => {
     if (incomingCall.style.display === "flex") {
       incomingCall.style.display = "none";
-      socket.emit("reject-call"); 
-      showAlert(`${data.name} tidak dijawab`);
     }
   }, 30000);
 });
