@@ -109,19 +109,9 @@
   width:100%; margin-top:10px;
 }
 
-.net-status{
-  position:absolute;
-  top:14px;
-  left:50%;
-  transform:translateX(-50%);
-  display:flex;
-  align-items:center;
-  gap:10px;
-  display:none; 
-  background:#202c33cc;
-  padding:6px 12px;
-  border-radius:20px;
-  font-size:12px;
+#signalStatus {
+  font-size: 20px;
+  font-weight: bold;
 }
 
 </style>
@@ -205,9 +195,9 @@
 
 <div id="videoScreen" class="video-wrap">
   <div class="video-header">
-    <span id="callName">Video Call</span>
-    <i class="bi bi-x-lg" onclick="endCall()"></i>
-  </div>
+  <span id="callName">Video Call</span>
+  <span id="signalStatus">🟢</span>
+</div>
 
   <div class="video-body">
     <video id="remoteVideo" autoplay playsinline></video>
@@ -238,12 +228,6 @@
     <br>
     <button onclick="closeProfile()">Tutup</button>
   </div>
-</div>
-
-<div class="net-status">
-  <span id="netLeft">Stabil</span>
-  <span id="signalDot">🟢</span>
-  <span id="netRight">HD</span>
 </div>
 
 <div id="waitingModal" class="modal">
@@ -621,18 +605,20 @@ function endCall() {
 }
 
 // SIGNAL QUALITY
-function checkSignal() {
+function checkSignal(){
   const s = pc.connectionState;
-  if (s === "connected") {
-    signalDot.textContent = "🟢";
+  const signalSpan = document.getElementById("signalStatus");
+
+  if(s === "connected"){
+    signalSpan.textContent = "🟢";  // hijau
     netLeft.textContent = "Stabil";
   }
-  if (s === "disconnected") {
-    signalDot.textContent = "🟡";
+  if(s === "disconnected"){
+    signalSpan.textContent = "🟡";  // kuning
     netLeft.textContent = "Lemah";
   }
-  if (s === "failed") {
-    signalDot.textContent = "🔴";
+  if(s === "failed"){
+    signalSpan.textContent = "🔴";  // merah
     netLeft.textContent = "Terputus";
   }
 }
