@@ -18,8 +18,8 @@
   flex-direction:column;
   z-index:30;
 }
-#localVideo{
-  transform: none;
+#localVideo {
+  transform: scaleX(1);
 }
 
 .video-header{
@@ -592,10 +592,25 @@ function toggleCam() {
 }
 
 async function switchCamera() {
+  if (!localStream) return;
+  
   isFront = !isFront;
-  if (localStream) localStream.getTracks().forEach(t => t.stop());
-  localStream = null;
-  await startMedia();
+
+  localStream.getTracks().forEach(t => t.stop());
+
+  localStream = await navigator.mediaDevices.getUserMedia({
+    video: { facingMode: isFront ? "user" : "environment", width: {ideal:480}, height: {ideal:640}, frameRate: {ideal:30} },
+    audio: true
+  });
+
+  localVideo.srcObject = localStream;
+  localVideo.muted = true;
+  await localVideo.play();
+
+  if (pc) {
+    const sender = pc.getSenders().find(s => s.track && s.track.kind === "video");
+    if (sender) sender.replaceTrack(localStream.getVideoTracks()[0]);
+  }
 }
 
 // END CALL
