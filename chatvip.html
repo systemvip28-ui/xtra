@@ -18,8 +18,10 @@
   flex-direction:column;
   z-index:30;
 }
+#localVideo{
+  transform: none;
+}
 
-/* HEADER */
 .video-header{
   height:56px;
   background:#0b141a;
@@ -29,51 +31,17 @@
   justify-content:space-between;
   padding:0 14px;
   font-weight:600;
-  z-index:5;
 }
 
-/* BODY VIDEO */
 .video-body{
   flex:1;
   position:relative;
   background:#000;
-  overflow:hidden;
 }
 
-/* VIDEO BESAR (REMOTE) */
-#remoteVideo{
-  position:absolute;
-  inset:0;
-  width:100%;
-  height:100%;
-  object-fit:cover;
-}
+.video-body video{ width:100%; height:100%; object-fit:cover; }
 
-/* VIDEO KECIL (LOCAL / PiP) */
-#localVideo{
-  position:absolute;
-  width:120px;
-  height:170px;
-  bottom:90px; /* di atas footer */
-  right:12px;
-  border-radius:12px;
-  border:2px solid #111;
-  object-fit:cover;
-  cursor:move;
-  z-index:10;
-  transform:scaleX(-1);
-}
-
-/* FOOTER */
-.video-footer{
-  height:72px;
-  background:#0b141a;
-  display:flex;
-  justify-content:space-evenly;
-  align-items:center;
-  z-index:5;
-}
-
+.video-body .pip{ position:absolute; bottom:12px; right:12px; width:110px; height:160px; border-radius:12px; border:2px solid #111; background:#000; }
 .pip{
   position:absolute;
   bottom:12px;
@@ -83,6 +51,14 @@
   border-radius:12px;
   cursor:move;
   z-index:10;
+}
+
+.video-footer{
+  height:72px;
+  background:#0b141a;
+  display:flex;
+  justify-content:space-evenly;
+  align-items:center;
 }
 
 .video-footer i{
@@ -114,37 +90,20 @@
 .modal-box button{
   width:100%; margin-top:10px;
 }
-.signal-box{
+
+.net-status{
+  position:absolute;
+  top:14px;
+  left:50%;
+  transform:translateX(-50%);
   display:flex;
   align-items:center;
-  gap:6px;
+  gap:10px;
+  display:none; 
+  background:#202c33cc;
+  padding:6px 12px;
+  border-radius:20px;
   font-size:12px;
-  opacity:.85;
-}
-
-.remote-overlay{
-  position:absolute;
-  top:12px;
-  left:12px;
-  display:none;
-  gap:8px;
-  z-index:20;
-}
-
-.remote-overlay i{
-  background:rgba(0,0,0,.6);
-  padding:8px;
-  border-radius:50%;
-  font-size:18px;
-  display:none;
-}
-
-/* Mirror hanya video lokal */
-#localVideo{
-  transform: scaleX(-1);
-}
-#remoteVideo{
-  transform:none;
 }
 
 </style>
@@ -227,26 +186,15 @@
 </div>
 
 <div id="videoScreen" class="video-wrap">
-<div class="video-header">
-  <span id="callName">Video Call</span>
-
-  <div class="signal-box">
-    <span id="signalDot">🟢</span>
-    <span id="netLeft">Stabil</span>
+  <div class="video-header">
+    <span id="callName">Video Call</span>
+    <i class="bi bi-x-lg" onclick="endCall()"></i>
   </div>
-</div>
 
-<div class="video-body">
-  <video id="remoteVideo" autoplay playsinline></video>
-  <video id="localVideo" autoplay muted playsinline></video>
-
-  <!-- 🔴 TARUH DI SINI -->
-  <div id="remoteOverlay" class="remote-overlay">
-    <i id="remoteMic" class="bi bi-mic-mute-fill"></i>
-    <i id="remoteCam" class="bi bi-camera-video-off-fill"></i>
+  <div class="video-body">
+    <video id="remoteVideo" autoplay playsinline></video>
+    <video id="localVideo" autoplay muted playsinline class="pip"></video>
   </div>
-</div>
-
 
   <div class="video-footer">
     <i id="micBtn" class="bi bi-mic-fill" onclick="toggleMic()"></i>
@@ -272,6 +220,12 @@
     <br>
     <button onclick="closeProfile()">Tutup</button>
   </div>
+</div>
+
+<div class="net-status">
+  <span id="netLeft">Stabil</span>
+  <span id="signalDot">🟢</span>
+  <span id="netRight">HD</span>
 </div>
 
 <div id="waitingModal" class="modal">
@@ -428,201 +382,274 @@ function timeNow(){
 }
 </script>
 <script>
-/* ================= STATE ================= */
-let pc = null;
-let localStream = null;
-let isFront = true;
-let callState = "idle"; // idle | calling | connected
-
+let pc, localStream, isFront=true;
 const ice = { iceServers:[{urls:"stun:stun.l.google.com:19302"}] };
+let callPending = false; 
 
-/* ================= UI ================= */
-const loading = document.createElement("div");
-loading.style.cssText = `
-position:absolute;inset:0;
-display:flex;align-items:center;justify-content:center;
-background:#000;color:#fff;z-index:50`;
-loading.innerText = "Menghubungkan…";
+let isLocalBig = false;
 
-function showVideo(){
-  videoScreen.style.display="flex";
-  videoScreen.querySelector(".video-body").appendChild(loading);
+function swapVideo(){
+  const remote = document.getElementById("remoteVideo");
+  const local = document.getElementById("localVideo");
+
+  if(isLocalBig){
+    remote.classList.remove("pip");
+    local.classList.add("pip");
+  }else{
+    local.classList.remove("pip");
+    remote.classList.add("pip");
+  }
+  isLocalBig = !isLocalBig;
 }
 
-/* ================= CLEAN ================= */
-function resetCall(){
-  callState="idle";
+localVideo.addEventListener("click", swapVideo);
+remoteVideo.addEventListener("click", swapVideo);
 
-  if(pc){
-    pc.ontrack = null;
-    pc.onicecandidate = null;
-    pc.close();
-    pc = null;
+function dragElement(el){
+  let x=0,y=0,px=0,py=0;
+
+  el.onmousedown = dragMouseDown;
+
+  function dragMouseDown(e){
+    e.preventDefault();
+    px=e.clientX;
+    py=e.clientY;
+    document.onmouseup = closeDrag;
+    document.onmousemove = elementDrag;
   }
 
-  if(localStream){
-    localStream.getTracks().forEach(t=>t.stop());
-    localStream=null;
+  function elementDrag(e){
+    e.preventDefault();
+    x = px - e.clientX;
+    y = py - e.clientY;
+    px = e.clientX;
+    py = e.clientY;
+
+    el.style.top = (el.offsetTop - y) + "px";
+    el.style.left = (el.offsetLeft - x) + "px";
+    el.style.bottom = "auto";
+    el.style.right = "auto";
   }
 
-  remoteVideo.srcObject=null;
-  localVideo.srcObject=null;
-  loading.remove();
+  function closeDrag(){
+    document.onmouseup=null;
+    document.onmousemove=null;
+  }
 }
 
-/* ================= MEDIA ================= */
-async function startMedia(){
-  if(localStream) return;
+dragElement(document.getElementById("localVideo"));
+dragElement(document.getElementById("remoteVideo"));
 
-  localStream = await navigator.mediaDevices.getUserMedia({
-    video:{
-      facingMode:isFront?"user":"environment",
-      width:{ideal:1280},
-      height:{ideal:720}
-    },
-    audio:true
-  });
-
-  localVideo.srcObject = localStream;
-  localVideo.muted = true;
-  await localVideo.play();
-}
-
-/* ================= PEER ================= */
-function createPeer(){
-  if(pc) return;
-
-  pc = new RTCPeerConnection(ice);
-
-  pc.ontrack = e=>{
-    remoteVideo.srcObject = e.streams[0];
-    remoteVideo.onplaying = ()=>{
-      loading.remove();
-      callState="connected";
-    };
-  };
-
-  pc.onicecandidate = e=>{
-    if(e.candidate && callState!=="idle")
-      socket.emit("ice",e.candidate);
-  };
-}
-
-function addTracks(){
-  localStream.getTracks().forEach(t=>pc.addTrack(t,localStream));
-}
-
-/* ================= CALLER ================= */
 function callUser(){
-  if(callState!=="idle") return;
+  if(!partner || callPending) return;
 
-  resetCall();
-  callState="calling";
+  callPending = true;
+  waitingModal.style.display = "flex";
 
-  showVideo();              // 🔴 CALLER MASUK DULU
-  startMedia().then(()=>{
-    createPeer();
-    addTracks();
-    socket.emit("call-user",{name:partner.name});
-  });
+  socket.emit("call-user", { name: partner.name });
+
+  // timeout 1 menit
+  window.callTimeout = setTimeout(()=>{
+    waitingModal.style.display = "none";
+    callPending = false;
+    alert("Panggilan tidak dijawab");
+  }, 60000);
 }
 
-/* ================= CALLEE ================= */
-socket.on("incoming-call",d=>{
-  if(callState!=="idle") return;
-  callerName.innerText=d.name;
-  incomingCall.style.display="flex";
-});
-
-async function acceptCall(){
-  incomingCall.style.display="none";
-  resetCall();
-  callState="calling";
-
-  showVideo();
-  await startMedia();
-  createPeer();
-  addTracks();
-
-  socket.emit("accept-call");
-}
-
-socket.on("call-accepted", async ()=>{
-  waitingModal.style.display="none";
-
-  resetCall();
-  callState="calling";
-  showVideo();
+socket.on("call-accepted", async () => {
+  clearTimeout(window.callTimeout);
+  waitingModal.style.display = "none";
+  callPending = false;
 
   await startMedia();
   createPeer();
+
+  localStream.getTracks().forEach(t =>
+    pc.addTrack(t, localStream)
+  );
 
   const offer = await pc.createOffer();
   await pc.setLocalDescription(offer);
-
-  addTracks(); // 🔴 PINDAH KE SINI (SETELAH setLocalDescription)
-
   socket.emit("offer", offer);
+
+  videoScreen.style.display = "flex";
 });
 
-/* ================= SIGNAL (DAFTAR SEKALI) ================= */
-socket.off("offer");
-socket.off("answer");
-socket.off("ice");
-socket.off("end-call");
+socket.on("incoming-call", data => {
+  callerName.innerText = data.name;
+  incomingCall.style.display = "flex";
+});
 
-socket.on("offer", async offer=>{
-  if(callState==="idle") return;
+async function acceptCall(){
+  incomingCall.style.display = "none";
 
   await startMedia();
   createPeer();
+
+  localStream.getTracks().forEach(t =>
+    pc.addTrack(t, localStream)
+  );
+
+  socket.emit("accept-call");
+  videoScreen.style.display = "flex";
+}
+
+async function createOffer(){
+  if(!pc) return;
+  const offer = await pc.createOffer();
+  await pc.setLocalDescription(offer);
+  socket.emit("offer", offer);
+}
+
+socket.on("offer", async offer => {
+  if(!pc) createPeer();
 
   await pc.setRemoteDescription(offer);
 
   const answer = await pc.createAnswer();
   await pc.setLocalDescription(answer);
 
-  addTracks(); 
-
   socket.emit("answer", answer);
 });
 
-socket.on("answer",async ans=>{
-  if(pc && callState!=="idle")
-    await pc.setRemoteDescription(ans);
+socket.on("answer", async answer => {
+  await pc.setRemoteDescription(answer);
 });
 
-socket.on("ice",async c=>{
-  if(pc && c && callState!=="idle")
-    await pc.addIceCandidate(c);
+socket.on("ice", async candidate => {
+  if(candidate && pc) await pc.addIceCandidate(candidate);
 });
 
-socket.on("end-call",()=>{
-  resetCall();
+function createPeer(){
+  if(pc) return;
+  pc = new RTCPeerConnection(ice);
+  pc.ontrack = e => {
+    remoteVideo.srcObject = e.streams[0];
+    videoScreen.style.display = "flex";
+  };
+  pc.onicecandidate = e => {
+    if(e.candidate) socket.emit("ice", e.candidate);
+  };
+  pc.onconnectionstatechange = checkSignal;
+}
+
+socket.on("end-call", () => {
+  if(pc) pc.close();
+
+  if(localStream){
+    localStream.getTracks().forEach(t=>t.stop());
+    localStream=null;
+  }
+
+  remoteVideo.srcObject = null;
+  pc=null;
   videoScreen.style.display="none";
+
+  document.querySelector(".net-status").style.display = "none";
 });
 
-localVideo.onclick = ()=>{
-  const a = localVideo.srcObject;
-  localVideo.srcObject = remoteVideo.srcObject;
-  remoteVideo.srcObject = a;
-};
+socket.on("call-rejected", ()=>{
+  clearTimeout(window.callTimeout);
+  waitingModal.style.display = "none";
+  callPending = false;
+});
 
-/* ================= END ================= */
+function rejectCall(){
+  incomingCall.style.display="none";
+  socket.emit("reject-call");
+}
+
+async function startMedia(){
+  if(localStream) return;
+
+  try{
+    localStream = await navigator.mediaDevices.getUserMedia({
+      video:{
+        facingMode: isFront ? "user" : "environment",
+
+        // ukuran ideal, bukan maksa
+        width:  { ideal: 720 },
+        height: { ideal: 1280 },
+
+        frameRate: { ideal: 30 },
+
+        // biar tidak terlalu dekat
+        resizeMode: "crop-and-scale"
+      },
+      audio:true
+    });
+
+    localVideo.srcObject = localStream;
+    localVideo.muted = true;
+    await localVideo.play();
+
+  }catch(err){
+    alert("Kamera / mikrofon tidak diizinkan");
+    console.error(err);
+  }
+}
+
+function toggleMic(){
+  if(!localStream) return;
+  const t = localStream.getAudioTracks()[0];
+  t.enabled = !t.enabled;
+
+  micBtn.className = t.enabled 
+    ? "bi bi-mic-fill" 
+    : "bi bi-mic-mute-fill";
+
+  socket.emit("media-status",{ mic:t.enabled });
+}
+
+function toggleCam(){
+  if(!localStream) return;
+  const t = localStream.getVideoTracks()[0];
+  t.enabled = !t.enabled;
+
+  camBtn.className = t.enabled
+    ? "bi bi-camera-video-fill"
+    : "bi bi-camera-video-off-fill";
+
+  socket.emit("media-status",{ cam:t.enabled });
+}
+
+async function switchCamera(){
+  isFront=!isFront;
+  if(localStream){
+    localStream.getTracks().forEach(t=>t.stop());
+    localStream=null;
+  }
+  await startMedia();
+}
+
 function endCall(){
-  socket.emit("end-call");
-  resetCall();
+  if(pc) pc.close();
+  if(localStream){
+    localStream.getTracks().forEach(t=>t.stop());
+    localStream = null;
+  }
+  pc = null;
+  remoteVideo.srcObject = null;
   videoScreen.style.display="none";
+  socket.emit("end-call");
 }
 
-/* ========= SIGNAL ========= */
 function checkSignal(){
-  if(!pc) return;
-  const s=pc.connectionState;
-  if(s==="connected"){signalDot.textContent="🟢";netLeft.textContent="Stabil";}
-  if(s==="disconnected"){signalDot.textContent="🟡";netLeft.textContent="Lemah";}
-  if(s==="failed"){signalDot.textContent="🔴";netLeft.textContent="Terputus";}
+  const s = pc.connectionState;
+  if(s==="connected"){
+    signalDot.textContent="🟢";
+    netLeft.textContent="Stabil";
+  }
+  if(s==="disconnected"){
+    signalDot.textContent="🟡";
+    netLeft.textContent="Lemah";
+  }
+  if(s==="failed"){
+    signalDot.textContent="🔴";
+    netLeft.textContent="Terputus";
+  }
 }
+
 </script>
 </body>
 </html>
