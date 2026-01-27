@@ -554,25 +554,40 @@ socket.on("end-call", () => {
 // START LOCAL MEDIA
 async function startMedia() {
   if (localStream) return;
+
   try {
     localStream = await navigator.mediaDevices.getUserMedia({
-      video: {
-        facingMode: "user",
-        width: { ideal: 480 },   // resolusi lebih kecil, lebih normal
-        height: { ideal: 640 },
-        frameRate: { ideal: 30 }
-        // Hapus resizeMode
-      },
+      video: { facingMode: "user", width: {ideal:480}, height:{ideal:640} },
       audio: true
     });
 
-    localVideo.srcObject = localStream;
-    localVideo.muted = true;
-    localVideo.style.transform = "scaleX(1)"; // pastikan tidak mirror
-    await localVideo.play();
+    const video = localVideo;
+    video.srcObject = localStream;
+    video.muted = true;
+
+    // Buat canvas untuk “mem-flip” video
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+
+    video.addEventListener("play", function () {
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      function draw() {
+        ctx.save();
+        ctx.scale(-1, 1); // balik horizontal
+        ctx.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
+        ctx.restore();
+        requestAnimationFrame(draw);
+      }
+      draw();
+    });
+
+    // Ganti localVideo dengan canvas
+    video.parentNode.replaceChild(canvas, video);
+
   } catch (err) {
-    alert("Kamera / mikrofon tidak diizinkan");
     console.error(err);
+    alert("Kamera / mikrofon tidak diizinkan");
   }
 }
 
