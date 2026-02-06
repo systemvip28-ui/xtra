@@ -114,6 +114,18 @@
     .btn-danger:hover {
       background: #dc2626;
     }
+.view-once-wrapper,
+.normal-image-wrapper {
+  cursor: pointer;
+}
+
+.normal-image-wrapper img {
+  transition: transform 0.2s;
+}
+
+.normal-image-wrapper:hover img {
+  transform: scale(1.03);
+}
 /* Tambahkan atau ganti di dalam <style> */
 /* ── View Once Wrapper ──────────────────────────────────────── */
 .view-once-wrapper {
@@ -892,7 +904,6 @@ socket.on('message-confirmed', ({ id }) => {
   if (!lastMsg.querySelector('.msg-action')) {
     const action = document.createElement('div');
     action.className = 'msg-action';
-    action.textContent = 'Hapus untuk semua';
     action.onclick = () => deleteForEveryone(id);
     lastMsg.appendChild(action);
   }
@@ -946,35 +957,36 @@ function start() {
 
 // ── Handler klik gambar view once ────────────────────────────────
 document.addEventListener('click', function(e) {
-  const wrapper = e.target.closest('.view-once-wrapper');
+  const wrapper = e.target.closest('.view-once-wrapper, .normal-image-wrapper');
   if (!wrapper) return;
 
   const src = wrapper.dataset.src;
   const fromName = wrapper.dataset.from;
+  const isViewOnce = wrapper.dataset.isViewonce === 'true';
 
   if (!src) return;
 
   // Tampilkan modal
-  document.getElementById('voHeader').textContent = `Foto dari ${fromName}`;
+  const headerText = isViewOnce 
+    ? `Gambar dari ${fromName}`
+    : `Gambar dari ${fromName}`;
+  
+  document.getElementById('voHeader').textContent = headerText;
   document.getElementById('voFullImage').src = src;
   document.getElementById('viewOnceModal').style.display = 'flex';
 
-  // Optional: hilangkan efek blur setelah dilihat pertama kali
-  const blurLayer = wrapper.querySelector('.view-once-blur');
-  if (blurLayer) {
-    blurLayer.classList.add('hidden');
+  // Khusus view-once: hilangkan blur setelah dilihat
+  if (isViewOnce) {
+    const blurLayer = wrapper.querySelector('.view-once-blur');
+    if (blurLayer) {
+      blurLayer.classList.add('hidden');
+    }
+    wrapper.style.pointerEvents = 'none'; // cegah klik ulang
+    wrapper.style.opacity = '0.85';
   }
 
-  // Optional: hapus kemampuan klik lagi (atau ganti icon jadi "sudah dilihat")
-  wrapper.style.pointerEvents = 'none';
-  wrapper.style.opacity = '0.85';
+  // Untuk gambar biasa: tidak perlu ubah apa-apa di list
 });
-
-function closeViewOnce() {
-  document.getElementById('viewOnceModal').style.display = 'none';
-  // Optional: reset src supaya tidak cache gambar besar
-  document.getElementById('voFullImage').src = '';
-}
 // ─── Chat ────────────────────────────────────────
 function addMsg(data, side, time = timeNow()) {
   const div = document.createElement("div");
@@ -1001,28 +1013,28 @@ function addMsg(data, side, time = timeNow()) {
   else if (data.type === 'file') {
     let previewHTML = '';
 
-    if (data.viewOnce) {
-      // Mode View Once → tampil buram + overlay jam pasir
-      previewHTML = `
-        <div class="view-once-wrapper" 
-             data-src="${data.fileUrl || ''}" 
-             data-from="${data.fromName || (side === 'me' ? (window.userData?.name || 'Kamu') : (partner?.name || 'Partner'))}">
-          <img src="${data.fileUrl || ''}" 
-               class="file-preview" 
-               style="filter: blur(18px); opacity: 0.45; transform: scale(1.05);" 
-               alt="View once blurred preview"/>
+    const isViewOnce = data.viewOnce === true;
+    const wrapperClass = isViewOnce ? 'view-once-wrapper' : 'normal-image-wrapper';
+    const imgStyle = isViewOnce 
+      ? 'filter: blur(18px); opacity: 0.45; transform: scale(1.05);'
+      : 'filter: none; opacity: 1; transform: none;';
+
+    previewHTML = `
+      <div class="${wrapperClass}" 
+           data-src="${data.fileUrl || ''}" 
+           data-from="${data.fromName || (side === 'me' ? (window.userData?.name || 'Kamu') : (partner?.name || 'Partner'))}"
+           data-is-viewonce="${isViewOnce ? 'true' : 'false'}">
+        <img src="${data.fileUrl || ''}" 
+             class="file-preview" 
+             style="${imgStyle}" 
+             alt="${isViewOnce ? 'View once image' : 'Shared image'}"/>
+        ${isViewOnce ? `
           <div class="view-once-blur">
             <div class="view-once-icon">⏳</div>
             <div class="view-once-text">Foto 1x<br>Klik untuk melihat</div>
           </div>
-        </div>`;
-    } else {
-      // Gambar biasa (bukan view once)
-      previewHTML = `
-        <img src="${data.fileUrl || ''}" 
-             class="file-preview" 
-             alt="Gambar dari chat"/>`;
-    }
+        ` : ''}
+      </div>`;
 
     content = `
       <div class="bubble">
@@ -1030,7 +1042,7 @@ function addMsg(data, side, time = timeNow()) {
         ${data.caption ? `<p style="margin-top:8px; font-size:0.9rem; opacity:0.9;">${data.caption}</p>` : ''}
       </div>`;
 
-    if (data.viewOnce) {
+    if (isViewOnce) {
       div.classList.add('view-once');
     }
   } 
@@ -1044,11 +1056,11 @@ function addMsg(data, side, time = timeNow()) {
     <div class="time">${time}</div>
   `;
 
-  // ── Tambah tombol "Hapus untuk semua" hanya untuk pesan sendiri ───────
+  // ── Tambah tombol "Hapus untuk semua" HANYA untuk pesan sendiri ───────
   if (side === 'me') {
     const action = document.createElement('div');
     action.className = 'msg-action';
-    action.textContent = data.type === 'deleted' ? '' : 'Hapus untuk semua';
+    action.textContent = data.type === 'deleted' ? '' : 'Hapus';
 
     if (data.type !== 'deleted') {
       action.onclick = () => {
@@ -1059,20 +1071,21 @@ function addMsg(data, side, time = timeNow()) {
           return;
         }
 
-        // Ubah tampilan lokal jadi "dihapus"
+        if (!confirm("Hapus pesan ini untuk semua orang?")) {
+          return;
+        }
+
         const bubble = div.querySelector('.bubble');
         if (bubble) {
           bubble.innerHTML = 'Pesan ini telah dihapus';
           bubble.className = 'bubble deleted-msg';
         }
 
-        // Hilangkan tombol hapus
         action.remove();
 
-        // Kirim ke server
         socket.emit('delete-for-everyone', { msgId: currentMsgId });
 
-        showToast("Pesan dihapus untuk semua");
+        showToast("Pesan dihapus");
       };
 
       div.appendChild(action);
@@ -1087,7 +1100,7 @@ function addMsg(data, side, time = timeNow()) {
   messagesContainer.appendChild(div);
   div.scrollIntoView({ behavior: "smooth", block: "end" });
 
-  return div; // optional
+  return div;
 }
 
 function timeNow() {
@@ -1158,7 +1171,7 @@ async function sendFile() {
 
   try {
     // Tampilkan indikator loading
-    showToast("Sedang mengupload...");
+    showToast("Sedang mengirim...");
 
     const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
       method: "POST",
@@ -1817,6 +1830,20 @@ async function switchCamera() {
     // Rollback status kalau gagal
     isFront = !isFront;
   }
+}
+
+function closeViewOnce() {
+  const modal = document.getElementById('viewOnceModal');
+  const img = document.getElementById('voFullImage');
+  
+  // Sembunyikan modal dulu
+  modal.style.display = 'none';
+  
+  // Reset src gambar supaya tidak cache / membebani memory
+  img.src = '';
+  
+  // Optional: reset header supaya bersih
+  document.getElementById('voHeader').textContent = 'Foto dari ...';
 }
 
 function toggleMic() {
