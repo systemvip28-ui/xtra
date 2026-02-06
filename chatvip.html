@@ -376,9 +376,9 @@
       z-index: 5;
     }
 
-    #localVideo {
-      transform: scaleX(-1); /* mirror default untuk self-view */
-    }
+#localVideo {
+  /* transform: scaleX(-1);  ← di-comment atau dihapus */
+}
 
     .video-footer {
       height: 80px;
@@ -894,7 +894,7 @@ function addMsg(data, side, time = timeNow()) {
       // Kirim ke server agar partner juga melihat perubahan
       socket.emit('delete-for-everyone', { msgId: currentMsgId });
 
-      showToast("Pesan dihapus untuk semua");
+      showToast("Pesan dihapus");
     };
 
     div.appendChild(action);
@@ -1418,7 +1418,7 @@ function resetVideoLayout() {
   remote.classList.remove("pip");
   remote.classList.add("full");
 
-  local.style.transform = "scaleX(-1)";  // mirror self
+  local.style.transform = "";
   remote.style.transform = "";
 
   local.style.zIndex = "10";
@@ -1577,7 +1577,7 @@ async function switchCamera() {
     localVideo.play().catch(e => console.log("Play error:", e));
 
     // 7. Mirror hanya kalau front camera
-    localVideo.style.transform = isFront ? "scaleX(-1)" : "scaleX(1)";
+    localVideo.style.transform = "";   // tidak mirror sama sekali
 
     // 8. Ganti track di peer connection (kirim ke remote)
     if (pc) {
