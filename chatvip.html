@@ -956,39 +956,57 @@ socket.on("partner-left", () => {
 
 // ─── Video Call ──────────────────────────────────
 async function startMedia() {
-  if (localStream) return;
   try {
     localStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: "user", width: {ideal:480}, height: {ideal:640} },
+      video: { facingMode: "user" },
       audio: true
     });
-    const lv = document.getElementById("localVideo");
-    lv.srcObject = localStream;
-    lv.play().catch(()=>{});
+    document.getElementById("localVideo").srcObject = localStream;
   } catch (err) {
-    showAlert("Tidak bisa mengakses kamera/mikrofon");
-    console.error(err);
+    console.error("getUserMedia gagal:", err);
+    showAlert("Tidak bisa akses kamera/mikrofon: " + err.message);
+    return false;  // penting: return false kalau gagal
   }
+  return true;
 }
 
 function createPeer() {
   if (pc) pc.close();
-  pc = new RTCPeerConnection(ice);
-
-  pc.ontrack = e => {
-    const rv = document.getElementById("remoteVideo");
-    rv.srcObject = e.streams[0];
-    rv.play().catch(()=>{});
-  };
+  pc = new RTCPeerConnection({
+    iceServers: [
+      { urls: "stun:stun.l.google.com:19302" },
+      { urls: "stun:stun1.l.google.com:19302" },
+      { urls: "stun:stun2.l.google.com:19302" }
+    ]
+  });
 
   pc.onicecandidate = e => {
-    if (e.candidate) socket.emit("ice", e.candidate);
+    if (e.candidate) {
+      console.log("Kirim ICE candidate");
+      socket.emit("ice", e.candidate);
+    }
+  };
+
+  pc.oniceconnectionstatechange = () => {
+    console.log("ICE state:", pc.iceConnectionState);
   };
 
   pc.onconnectionstatechange = () => {
-    updateConnectionUI();
-    checkSignal();
+    console.log("Connection state:", pc.connectionState);
+    if (pc.connectionState === "connected") {
+      console.log("WebRTC CONNECTED!");
+    } else if (pc.connectionState === "failed" || pc.connectionState === "disconnected") {
+      console.log("WebRTC gagal/terputus");
+    }
   };
+
+  pc.ontrack = e => {
+    console.log("Menerima track remote!");
+    const rv = document.getElementById("remoteVideo");
+    rv.srcObject = e.streams[0];
+  };
+
+  return pc;
 }
 
 function updateConnectionUI() {
@@ -1083,19 +1101,20 @@ function checkSignal() {
 }
 
 async function callUser() {
-  if (!partner || callPending) return;
-  callPending = true;
+  if (!partner) return;
 
-  document.getElementById("waitingModal").style.display = "grid";
-  document.getElementById("waitingText").textContent = `Menghubungi ${partner.name}...`;
-  socket.emit("call-user", { name: partner.name });
+  const hasMedia = await startMedia();
+  if (!hasMedia) return;
 
-  window.callTm = setTimeout(() => {
-    document.getElementById("waitingModal").style.display = "none";
-    callPending = false;
-    showAlert("Tidak ada jawaban dari partner");
-    socket.emit("cancel-call", { to: partner.name });
-  }, 30000);
+  createPeer();
+
+  localStream.getTracks().forEach(track => {
+    pc.addTrack(track, localStream);
+    console.log("Track ditambahkan:", track.kind);
+  });
+
+  socket.emit("call-user");  // kirim sinyal ke server
+  // tampilkan waiting modal
 }
 
 socket.on("incoming-call", d => {
@@ -1151,16 +1170,20 @@ socket.on("answer", a => pc.setRemoteDescription(a));
 
 socket.on("ice", c => pc?.addIceCandidate(new RTCIceCandidate(c)));
 
-function acceptCall() {
+async function acceptCall() {
   document.getElementById("incomingCall").style.display = "none";
+
+  const hasMedia = await startMedia();
+  if (!hasMedia) return;
+
+  createPeer();
+
+  localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+
   socket.emit("accept-call");
 
-  startMedia().then(() => {
-    createPeer();
-    localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
-    resetVideoLayout();
-    document.getElementById("videoScreen").style.display = "flex";
-  });
+  // Tampilkan video screen
+  document.getElementById("videoScreen").style.display = "flex";
 }
 
 function rejectCall() {
