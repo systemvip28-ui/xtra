@@ -1101,20 +1101,46 @@ function checkSignal() {
 }
 
 async function callUser() {
-  if (!partner) return;
+  if (!partner) {
+    showAlert("Belum ada partner yang terhubung!");
+    return;
+  }
 
-  const hasMedia = await startMedia();
-  if (!hasMedia) return;
+  // Tampilkan modal waiting SEBELUM mulai proses call
+  const waitingModal = document.getElementById("waitingModal");
+  const waitingText = document.getElementById("waitingText");
+  waitingText.textContent = "Menunggu " + (partner.name || "partner") + " menerima panggilan...";
+  waitingModal.style.display = "grid";
 
-  createPeer();
+  // Optional: tambah timeout kalau partner lama tidak jawab (misal 45 detik)
+  window.callTm = setTimeout(() => {
+    if (waitingModal.style.display === "grid") {
+      waitingModal.style.display = "none";
+      showAlert("Panggilan tidak dijawab dalam waktu lama. Coba lagi nanti.");
+    }
+  }, 45000);
 
-  localStream.getTracks().forEach(track => {
-    pc.addTrack(track, localStream);
-    console.log("Track ditambahkan:", track.kind);
-  });
+  try {
+    const hasMedia = await startMedia();
+    if (!hasMedia) {
+      waitingModal.style.display = "none";
+      return;
+    }
 
-  socket.emit("call-user");  // kirim sinyal ke server
-  // tampilkan waiting modal
+    createPeer();
+
+    localStream.getTracks().forEach(track => {
+      pc.addTrack(track, localStream);
+      console.log("Track ditambahkan:", track.kind);
+    });
+
+    socket.emit("call-user");  // kirim sinyal ke server
+
+  } catch (err) {
+    console.error("Gagal memulai panggilan:", err);
+    waitingModal.style.display = "none";
+    showAlert("Gagal memulai video call: " + err.message);
+  }
 }
 
 socket.on("incoming-call", d => {
