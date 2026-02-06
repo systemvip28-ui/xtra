@@ -1,576 +1,1026 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Chat Komunitas</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Chat Random • Temuin Orang Baru</title>
 
-<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"/>
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 
-<style> :root{ --bg:#0b141a; --card:#202c33; --me:#005c4b; --other:#1f2c33; --accent:#00a884; --text:#e9edef; } *{box-sizing:border-box;font-family:system-ui} html,body{margin:0;height:100%;background:var(--bg);color:var(--text)} .screen{height:100%;display:flex;justify-content:center;align-items:center} .card{width:90%;max-width:420px;background:var(--card);padding:24px;border-radius:20px} input,select,button{ width:100%;padding:12px;border-radius:12px;border:none;margin-bottom:10px } input,select{background:#0b141a;color:#fff} button{background:var(--accent);color:#fff;font-weight:600} #searching{ display:none; flex-direction:column; align-items:center; gap:12px; } .loader{ width:36px;height:36px; border:4px solid #2a3942; border-top-color:var(--accent); border-radius:50%; animation:spin 1s linear infinite; } @keyframes spin{to{transform:rotate(360deg)}} #chat{display:none;height:100%;flex-direction:column} .header{ height:56px;background:var(--card); display:flex;align-items:center;justify-content:space-between; padding:0 14px; } .icons i{font-size:20px;margin-left:14px;cursor:pointer} #messages{flex:1;padding:12px;overflow-y:auto} .msg{max-width:78%;margin-bottom:8px;font-size:14px} .me{margin-left:auto} .bubble{padding:8px 12px;border-radius:8px} .me .bubble{background:var(--me);border-top-right-radius:0} .other .bubble{background:var(--other);border-top-left-radius:0} .time{font-size:10px;opacity:.5;text-align:right;margin-top:2px} .footer{padding:8px;background:var(--card);display:flex;gap:6px} .footer input{flex:1;border-radius:20px} .footer button{width:44px;border-radius:50%} #profileModal{ position:fixed;inset:0; background:rgba(0,0,0,.6); display:none; justify-content:center; align-items:center; z-index:9 } #profileBox{ background:#202c33; width:90%; max-width:320px; padding:20px; border-radius:16px } .login-header{ text-align:center; animation:fadeUp .6s ease; } .login-header .logo{ font-size:40px; margin-bottom:6px; } .login-header h1{ margin:0; font-size:22px; font-weight:700; } .login-header p{ margin:4px 0 16px; font-size:13px; opacity:.7; } .start-btn{ width:160px; margin:0 auto; border-radius:30px; } .card{ margin-top:20px; animation:slideUp .4s ease; } .hidden{ display:none; } .age-wrap{ display:flex; justify-content:space-between; font-weight: bold; font-size:14px; opacity:.8; margin-top:10px; } @keyframes fadeUp{ from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} } @keyframes slideUp{ from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} } .card-header{ text-align:center; margin-bottom:14px; } .card-header h2{ margin:0; font-size:18px; font-weight:700; } .card-header p{ margin:4px 0 0; font-size:12px; opacity:.7; } #partnerStatus { transition: color 0.3s; font-style: italic; } .status-online { color: #25D366; font-weight: bold; } .status-offline { color: #FF4D4D; font-weight: bold; } .status-typing { color: #FFD700; font-weight: bold; } </style>
-<style>
-.video-wrap{
-  position:fixed;
-  inset:0;
-  background:#000;
-  display:none;
-  flex-direction:column;
-  z-index:30;
-}
+  <style>
+    :root {
+      --bg:        #0d1117;
+      --surface:   #161b22;
+      --surface-2: #1f2937;
+      --accent:    #10b981;
+      --accent-dark:#059669;
+      --danger:    #ef4444;
+      --warning:   #f59e0b;
+      --success:   #10b981;
+      --text:      #e2e8f0;
+      --text-sec:  #94a3b8;
+      --border:    #30363d;
+      --me:        #065f46;
+      --other:     #1e293b;
+    }
 
-#localVideo {
-  transform: scaleX(1);
-}
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
 
-.video-header{
-  height:56px;
-  background:#0b141a;
-  color:#fff;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  padding:0 14px;
-  font-weight:600;
-}
+    html, body {
+      height: 100%;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow: hidden;
+    }
 
-.video-body{
-  flex:1;
-  position:relative;
-  background:#000;
-}
+    .screen {
+      height: 100dvh;
+      display: grid;
+      place-items: center;
+      padding: 16px;
+    }
 
-.video-body video { 
-  width: 100%; 
-  height: 100%; 
-  object-fit: cover; 
-}
+    .card {
+      width: 100%;
+      max-width: 420px;
+      background: var(--surface);
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      padding: 28px 24px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    }
 
-.video-body .pip{ 
-  position:absolute; bottom:12px; 
-  right:12px; 
-  width:110px; 
-  height:160px; 
-  border-radius:12px; 
-  border:2px solid #111; 
-  background:#000;
-}
+    .logo-big {
+      font-size: 3.8rem;
+      margin-bottom: 0.5rem;
+      text-align: center;
+    }
 
-.pip{
-  position:absolute;
-  bottom:12px;
-  right:12px;
-  width:120px;
-  height:170px;
-  border-radius:12px;
-  cursor:move;
-  z-index:10;
-}
+    h1, h2, h3 {
+      text-align: center;
+    }
 
-.video-footer{
-  height:72px;
-  background:#0b141a;
-  display:flex;
-  justify-content:space-evenly;
-  align-items:center;
-}
+    h1 { font-size: 1.75rem; font-weight: 700; margin-bottom: 0.5rem; }
+    h2 { margin-bottom: 1.5rem; }
+    .subtitle {
+      color: var(--text-sec);
+      text-align: center;
+      font-size: 0.95rem;
+      margin-bottom: 1.8rem;
+    }
 
-.video-footer i{
-  font-size:24px;
-  padding:14px;
-  border-radius:50%;
-  background:#202c33;
-}
+    input, select, button {
+      width: 100%;
+      padding: 14px 16px;
+      margin-bottom: 12px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+      color: white;
+      font-size: 1rem;
+    }
 
-.video-footer .end{
-  background:#ff4d4d;
-}
+    input::placeholder, select option:disabled {
+      color: #64748b;
+    }
 
-.modal {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,.7);
-  display: none;
-  justify-content: center;
-  align-items: center;
-  z-index: 50;
-}
+    button {
+      background: var(--accent);
+      color: white;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
 
-.modal-box {
-  background: #202c33;
-  padding: 20px;
-  border-radius: 16px;
-  width: 80%;
-  max-width: 300px;
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
+    button:hover {
+      background: var(--accent-dark);
+      transform: translateY(-1px);
+    }
 
-.reject-box p {
-  font-size: 14px;
-  opacity: 0.8;
-}
-.reject-box button {
-  background: var(--accent);
-  color: #fff;
-  border: none;
-  padding: 10px;
-  border-radius: 12px;
-  cursor: pointer;
-  font-weight: 600;
-}
+    button:active {
+      transform: translateY(0);
+    }
 
-#waitingModal .modal-box {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  gap: 12px;
-}
+    .btn-danger {
+      background: var(--danger);
+    }
+    .btn-danger:hover {
+      background: #dc2626;
+    }
 
-.modal-box button{
-  width:100%; margin-top:10px;
-}
+    .loader {
+      width: 48px;
+      height: 48px;
+      border: 5px solid #2d3748;
+      border-top: 5px solid var(--accent);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
 
-.net-status{
-  position:absolute;
-  top:14px;
-  left:50%;
-  transform:translateX(-50%);
-  display:flex;
-  align-items:center;
-  gap:10px;
-  display:none; 
-  background:#202c33cc;
-  padding:6px 12px;
-  border-radius:20px;
-  font-size:12px;
-}
-</style>
-<div class="screen" id="login">
-  <div class="login-header" id="loginHeader">
-    <div class="logo">💬</div>
-    <h1>Chat Komunitas</h1>
-    <p>Ngobrol random dengan orang baru</p>
+    @keyframes spin { to { transform: rotate(360deg); } }
 
-    <button class="start-btn" onclick="showForm()">
-      Mulai
-    </button>
+    #chat {
+      display: none;
+      flex-direction: column;
+      height: 100dvh;
+    }
+
+    .header {
+      height: 64px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      font-weight: 500;
+    }
+
+    .partner-info {
+      line-height: 1.3;
+    }
+
+    .partner-name {
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+
+    .partner-status {
+      font-size: 0.82rem;
+      opacity: 0.8;
+    }
+
+    .status-online  { color: #34d399; }
+    .status-offline { color: #f87171; }
+    .status-typing  { color: #fbbf24; font-style: italic; }
+
+    .encryption-info {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--surface-2);
+      padding: 6px 12px;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.85rem;
+      color: var(--text-sec);
+      gap: 6px;
+    }
+
+    .encryption-info i {
+      font-size: 1rem;
+      color: var(--success);
+    }
+
+    #messages {
+      flex: 1;
+      padding: 16px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .msg {
+      max-width: 78%;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      user-select: none; /* Untuk long press */
+    }
+
+    .me   { align-self: flex-end; }
+    .other { align-self: flex-start; }
+
+    .bubble {
+      padding: 10px 14px;
+      border-radius: 18px;
+      font-size: 0.96rem;
+      line-height: 1.4;
+      word-break: break-word;
+    }
+
+    .me .bubble {
+      background: var(--me);
+      border-bottom-right-radius: 4px;
+    }
+
+    .other .bubble {
+      background: var(--other);
+      border-bottom-left-radius: 4px;
+    }
+
+    .time {
+      font-size: 0.68rem;
+      opacity: 0.6;
+      margin-top: 3px;
+      align-self: flex-end;
+    }
+
+    .file-preview {
+      max-width: 100%;
+      max-height: 200px;
+      border-radius: 8px;
+    }
+
+    .view-once {
+      opacity: 0.7;
+      font-style: italic;
+    }
+
+    .deleted-msg {
+      font-style: italic;
+      color: var(--text-sec);
+    }
+
+    .footer {
+      padding: 12px 16px;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 10px;
+    }
+
+    .footer input {
+      flex: 1;
+      border-radius: 999px;
+      padding: 12px 20px;
+      border: none;
+    }
+
+    .footer button {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      font-size: 1.4rem;
+      display: grid;
+      place-items: center;
+      padding: 0;
+    }
+
+    .video-wrap {
+      position: fixed;
+      inset: 0;
+      background: black;
+      display: none;
+      flex-direction: column;
+      z-index: 100;
+    }
+
+    .video-header {
+      height: 56px;
+      background: rgba(0,0,0,0.6);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      font-size: 1.05rem;
+      backdrop-filter: blur(10px);
+    }
+
+    .video-body {
+      flex: 1;
+      position: relative;
+      background: #000;
+    }
+
+    video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: all 0.4s ease;
+    }
+
+    /* PIP (picture-in-picture) style - KONSISTEN di semua kondisi */
+    #localVideo.pip,
+    #remoteVideo.pip {
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      width: 120px !important;
+      height: 160px !important;
+      border-radius: 16px;
+      border: 3px solid rgba(255,255,255,0.25);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.6);
+      background: black;
+      object-fit: cover;
+      cursor: pointer;
+      z-index: 10;
+    }
+
+    /* Full screen style */
+    #localVideo.full,
+    #remoteVideo.full {
+      position: static;
+      width: 100% !important;
+      height: 100% !important;
+      border-radius: 0 !important;
+      border: none !important;
+      box-shadow: none !important;
+      z-index: 5;
+    }
+
+    #localVideo {
+      transform: scaleX(-1); /* mirror default untuk self-view */
+    }
+
+    .video-footer {
+      height: 80px;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(10px);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .video-footer i {
+      font-size: 1.6rem;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.08);
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .video-footer i:hover {
+      background: rgba(255,255,255,0.15);
+    }
+
+    .video-footer i.muted {
+      color: #fca5a5;
+      background: rgba(239,68,68,0.18);
+    }
+
+    .video-footer .end-call {
+      background: var(--danger);
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.75);
+      display: none;
+      place-items: center;
+      z-index: 200;
+      backdrop-filter: blur(4px);
+    }
+
+    .modal-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 28px;
+      width: 90%;
+      max-width: 360px;
+      text-align: center;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+    }
+
+    .modal-box button {
+      margin: 8px 0;
+    }
+
+    #actionToast {
+      position: fixed;
+      bottom: 90px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(30,41,59,0.92);
+      color: white;
+      padding: 12px 24px;
+      border-radius: 999px;
+      font-size: 0.95rem;
+      z-index: 300;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.4s, transform 0.4s;
+      backdrop-filter: blur(10px);
+    }
+
+    .net-pill {
+      background: rgba(30,41,59,0.85);
+      padding: 5px 12px;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      display: none;
+      align-items: center;
+      backdrop-filter: blur(10px);
+      color: #34d399;
+      border: 1px solid #0f9d6e;
+    }
+
+    .video-header .net-pill {
+      margin-left: auto;
+      align-self: center;
+    }
+
+    #filePreviewModal .preview-img {
+      max-width: 100%;
+      max-height: 200px;
+      margin-bottom: 12px;
+      border-radius: 8px;
+    }
+
+    #filePreviewModal .caption-input {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+      color: var(--text);
+    }
+
+    #filePreviewModal .view-once-checkbox {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+      font-size: 0.95rem;
+    }
+
+    .msg-action {
+      position: absolute;
+      top: -40px;
+      right: 0;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 12px;
+      display: none;
+      z-index: 10;
+      cursor: pointer;
+      color: var(--danger);
+    }
+
+    .msg:hover .msg-action {
+      display: block;
+    }
+
+    @media (max-width: 500px) {
+      .video-header .net-pill {
+        padding: 4px 10px;
+        font-size: 0.78rem;
+      }
+      #localVideo.pip, #remoteVideo.pip {
+        width: 100px !important;
+        height: 133px !important;
+        bottom: 16px;
+        right: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<!-- LOGIN / WELCOME -->
+<div class="screen" id="loginScreen">
+  <div id="welcomeContent">
+    <div class="logo-big">💬</div>
+    <h1>Chat Random</h1>
+    <div class="subtitle">Ngobrol santai dengan orang baru</div>
+    <button onclick="showLoginForm()">Mulai Sekarang</button>
   </div>
 
-<div class="card hidden" id="loginForm">
-  <div class="card-header">
-    <h2>Sanz Project</h2>
-    <p>Isi data singkat sebelum mulai chat</p>
-  </div>
+  <div class="card hidden" id="loginForm">
+    <h2>Isi Data Diri</h2>
 
-  <input id="name" placeholder="Nama">
+    <input id="name" placeholder="Nama (opsional)" autocomplete="off"/>
+    
+    <div style="display:flex; justify-content:space-between; align-items:center; margin:8px 0 4px; font-weight:500; color:var(--text-sec)">
+      <span>Umur</span>
+      <span id="ageVal">21</span>
+    </div>
+    <input id="age" type="range" min="13" max="80" value="21" oninput="ageVal.innerText=this.value"/>
 
-  <div class="age-wrap">
-    <span>Umur</span>
-    <span id="ageVal">21</span>
-  </div>
-  <input id="age" type="range" min="7" max="100" value="21"
-    oninput="ageVal.innerText=this.value">
+    <select id="gender">
+      <option value="" disabled selected>Gender</option>
+      <option>Laki-laki</option>
+      <option>Perempuan</option>
+    </select>
 
-  <select id="gender">
-    <option value="" disabled selected>Gender</option>
-    <option>Laki-laki</option>
-    <option>Perempuan</option>
-  </select>
+    <select id="job">
+      <option value="" disabled selected>Status saat ini</option>
+      <option>Sekolah / Kuliah</option>
+      <option>Kerja</option>
+      <option>Mencari kerja</option>
+      <option>Lainnya</option>
+    </select>
 
-  <select id="job">
-    <option value="" disabled selected>Status</option>
-    <option>Sekolah</option>
-    <option>Kerja</option>
-    <option>Pengangguran</option>
-  </select>
+    <select id="server">
+      <option value="server1">Server 1 (Utama)</option>
+      <option value="server2">Server 2</option>
+      <option value="server3">Server 3</option>
+    </select>
 
-  <select id="server">
-    <option value="server1">Server 1</option>
-    <option value="server2">Server 2</option>
-    <option value="server3">Server 3</option>
-  </select>
-
-  <button onclick="start()">Masuk Chat</button>
-  
+    <button onclick="start()">Masuk Chat</button>
   </div>
 </div>
 
-<div class="screen" id="searching">
+<!-- SEARCHING -->
+<div class="screen" id="searching" style="display:none; flex-direction:column; gap:1.5rem;">
   <div class="loader"></div>
-  <div>Mencari partner...</div>
+  <div style="font-size:1.1rem; opacity:0.9">Mencari temen ngobrol...</div>
 </div>
 
+<!-- MAIN CHAT -->
 <div id="chat">
   <div class="header">
-  <div>
-    <div id="partnerName">Chat</div>
-    <div id="partnerStatus" style="font-size:12px;opacity:0.6;height:14px;">Online</div>
+    <div class="partner-info">
+      <div class="partner-name" id="partnerName">Menghubungkan...</div>
+      <div class="partner-status" id="partnerStatus">Online</div>
+    </div>
+    <div style="display:flex; gap:16px; font-size:1.4rem;">
+      <i class="bi bi-arrow-clockwise" id="refreshBtn" onclick="refreshChat()" style="display:none; cursor:pointer"></i>
+      <i class="bi bi-camera-video-fill" onclick="callUser()" id="videoCallBtn" style="cursor:pointer"></i>
+      <i class="bi bi-person-circle" onclick="openProfile()" style="cursor:pointer"></i>
+      <i class="bi bi-box-arrow-right" onclick="logout()" style="cursor:pointer; color:#f87171"></i>
+    </div>
   </div>
-<div class="icons">
-  <i class="bi bi-arrow-clockwise" id="refreshBtn" onclick="refreshChat()" style="display:none"></i>
-  <i class="bi bi-camera-video-fill" onclick="callUser()" id="videoCallBtn"></i>
-  <i class="bi bi-person-circle" onclick="openProfile()"></i>
-  <i class="bi bi-box-arrow-right" onclick="logout()"></i>
-</div>
-</div>
+
+  <div class="encryption-info">
+    <i class="bi bi-lock-fill"></i>
+    End-to-end encrypted
+  </div>
 
   <div id="messages"></div>
 
   <div class="footer">
-    <input id="msg" placeholder="Pesan..."
-      onkeydown="if(event.key==='Enter')sendMessage()">
+    <input id="msg" placeholder="Ketik pesan..." autocomplete="off" onkeydown="if(event.key==='Enter')sendMessage()"/>
+    <button onclick="document.getElementById('fileInput').click()"><i class="bi bi-paperclip"></i></button>
+    <input type="file" id="fileInput" style="display:none;" onchange="previewFile()"/>
     <button onclick="sendMessage()">➤</button>
   </div>
 </div>
 
+<!-- VIDEO CALL INTERFACE -->
 <div id="videoScreen" class="video-wrap">
   <div class="video-header">
     <span id="callName">Video Call</span>
-    <span id="signalStatus" style="font-size:12px; opacity:0.8;">🟢 Stabil</span>
+    <div class="net-pill" id="netStatus">
+      <span id="netLeft">— ms</span>
+    </div>
   </div>
 
   <div class="video-body">
-    <video id="remoteVideo" autoplay playsinline></video>
+    <video id="remoteVideo" autoplay playsinline class="full"></video>
     <video id="localVideo" autoplay muted playsinline class="pip"></video>
   </div>
 
   <div class="video-footer">
-    <i id="micBtn" class="bi bi-mic-fill" onclick="toggleMic()"></i>
-    <i id="camBtn" class="bi bi-camera-video-fill" onclick="toggleCam()"></i>
+    <i id="micBtn"   class="bi bi-mic-fill"        onclick="toggleMic()"></i>
+    <i id="camBtn"   class="bi bi-camera-video-fill" onclick="toggleCam()"></i>
     <i class="bi bi-arrow-repeat" onclick="switchCamera()"></i>
-    <i class="bi bi-telephone-x-fill end" onclick="endCall()"></i>
+    <i class="bi bi-telephone-x-fill end-call" onclick="endCall()"></i>
   </div>
 </div>
 
+<!-- MODALS -->
 <div id="incomingCall" class="modal">
   <div class="modal-box">
-    <h3>Panggilan Masuk</h3>
-    <p id="callerName"></p>
+    <h3>Panggilan Video Masuk</h3>
+    <p id="callerName" style="margin:1rem 0; font-size:1.1rem"></p>
     <button onclick="acceptCall()">Terima</button>
-    <button onclick="rejectCall()" style="background:#ff4d4d">Tolak</button>
+    <button class="btn-danger" onclick="rejectCall()">Tolak</button>
   </div>
 </div>
 
 <div id="rejectedModal" class="modal">
   <div class="modal-box">
-    <div class="modal-icon">
-      <svg xmlns="http://www.w3.org/2000/svg" width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="#f44336" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <line x1="18" y1="6" x2="6" y2="18"></line>
-        <line x1="6" y1="6" x2="18" y2="18"></line>
-      </svg>
-    </div>
-    <p id="rejectedText"></p>
+    <div style="font-size:3rem; color:var(--danger); margin-bottom:1rem;">✖</div>
+    <p id="rejectedText" style="margin-bottom:1.5rem"></p>
     <button onclick="closeRejected()">Tutup</button>
   </div>
 </div>
 
-<div id="profileModal">
-  <div id="profileBox">
+<div id="profileModal" class="modal">
+  <div class="modal-box" style="text-align:left">
     <h3>Profil Partner</h3>
-    <div id="profileContent"></div>
-    <br>
+    <div id="profileContent" style="margin:1.2rem 0; line-height:1.7; color:var(--text-sec)"></div>
     <button onclick="closeProfile()">Tutup</button>
   </div>
 </div>
 
-<div class="net-status">
-  <span id="netLeft">Stabil</span>
-  <span id="signalDot">🟢</span>
-  <span id="netRight">HD</span>
-</div>
-
 <div id="waitingModal" class="modal">
   <div class="modal-box">
-    <div class="loader"></div>
-    <p id="waitingText">Menunggu partner menerima panggilan...</p>
+    <div class="loader" style="margin:0 auto 1.5rem"></div>
+    <p id="waitingText">Menunggu partner menerima...</p>
   </div>
 </div>
 
 <div id="alertModal" class="modal">
   <div class="modal-box">
-    <p id="alertText" style="font-size:14px;"></p>
-    <button onclick="closeAlert()">Tutup</button>
+    <p id="alertText" style="margin-bottom:1.5rem; font-size:1rem"></p>
+    <button onclick="closeAlert()">OK</button>
   </div>
 </div>
 
+<div id="filePreviewModal" class="modal" style="display:none;">
+  <div class="modal-box">
+    <h3>Pratinjau File</h3>
+    <img id="previewImage" class="preview-img" style="display:none;"/>
+    <input id="captionInput" class="caption-input" placeholder="Tambahkan caption (opsional)"/>
+    <label class="view-once-checkbox">
+      <input type="checkbox" id="viewOnceCheckbox"/>
+      Kirim sebagai sekali lihat
+    </label>
+    <button onclick="sendFile()">Kirim</button>
+    <button class="btn-danger" onclick="cancelFilePreview()">Batal</button>
+  </div>
+</div>
+
+<div id="actionToast"></div>
+
 <script>
-// ================== SOCKET CHAT ==================
+// ────────────────────────────────────────────────
 const socket = io("https://chat-jsb8.onrender.com");
+
 let partner = null;
+let pc, localStream;
+let isFront = true;
+let isPipSwapped = false;
+let callPending = false;
+let lastRTT = 0;
+let selectedFile = null;
+let messageIdCounter = 0; // Untuk assign ID unik ke pesan
+let messagesMap = {}; // Map pesan berdasarkan ID untuk delete
 
-function start() {
-  const username = document.getElementById("name").value.trim();
-  const userAge = document.getElementById("age").value;
-  const userGender = document.getElementById("gender").value;
-  const userJob = document.getElementById("job").value;
-  const userServer = document.getElementById("server").value;
+const ice = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
 
-  socket.emit("join", {
-    name: username || "Anonim",
-    age: userAge,
-    gender: userGender,
-    job: userJob,
-    server: userServer
-  });
-
-  login.style.display = "none";
-  searching.style.display = "flex";
+function showToast(msg) {
+  const t = document.getElementById("actionToast");
+  t.textContent = msg;
+  t.style.opacity = "1";
+  t.style.transform = "translateX(-50%) translateY(0)";
+  setTimeout(() => {
+    t.style.opacity = "0";
+    t.style.transform = "translateX(-50%) translateY(20px)";
+  }, 2800);
 }
 
 function showAlert(text) {
-  alertText.innerText = text;
-  alertModal.style.display = "flex";
+  document.getElementById("alertText").textContent = text;
+  document.getElementById("alertModal").style.display = "grid";
 }
 
 function closeAlert() {
-  alertModal.style.display = "none";
+  document.getElementById("alertModal").style.display = "none";
 }
 
-function showForm() {
-  document.getElementById("loginHeader").style.display = "none";
+// ─── Login Flow ──────────────────────────────────
+function showLoginForm() {
+  document.getElementById("welcomeContent").style.display = "none";
   document.getElementById("loginForm").classList.remove("hidden");
+  document.getElementById("name").focus();
 }
 
-function setStatus(status) {
-  partnerStatus.innerText = status;
-  partnerStatus.classList.remove("status-online", "status-offline", "status-typing");
-  if (status === "Online") partnerStatus.classList.add("status-online");
-  else if (status === "Offline") partnerStatus.classList.add("status-offline");
-  else if (status === "Sedang mengetik…") partnerStatus.classList.add("status-typing");
+function start() {
+  const name   = document.getElementById("name").value.trim()   || "Anon";
+  const age    = document.getElementById("age").value;
+  const gender = document.getElementById("gender").value;
+  const job    = document.getElementById("job").value;
+  const server = document.getElementById("server").value;
+
+  if (!gender || !job) {
+    showAlert("Gender dan Status wajib diisi!");
+    return;
+  }
+
+  window.userData = { name, age, gender, job, server };
+  socket.emit("join", { name, age, gender, job, server });
+
+  document.getElementById("loginScreen").style.display = "none";
+  document.getElementById("searching").style.display = "flex";
 }
 
-socket.on("matched", p => {
-  partner = p;
-  searching.style.display = "none";
-  chat.style.display = "flex";
-  messages.innerHTML = "";
-  partnerName.innerText = p.name;
-  setStatus("Online");
-  enableChat();
-  refreshBtn.style.display = "none";
-});
+// ─── Chat ────────────────────────────────────────
+function addMsg(data, side, time = timeNow()) {
+  const div = document.createElement("div");
+  div.className = `msg ${side}`;
+  div.dataset.msgId = data.id; // Simpan ID pesan
+  messagesMap[data.id] = div;
 
-socket.on("message", m => {
-  addMsg(m.text, "other", timeNow());
-});
+  let content = '';
+  if (data.type === 'text') {
+    content = `<div class="bubble">${data.text}</div>`;
+  } else if (data.type === 'file') {
+    content = `<div class="bubble">
+                 <img src="${data.fileUrl}" class="file-preview" alt="File"/>
+                 ${data.caption ? `<p>${data.caption}</p>` : ''}
+               </div>`;
+    if (data.viewOnce) {
+      div.classList.add('view-once');
+      // Asumsi auto-delete setelah dilihat, emit ke server
+      setTimeout(() => socket.emit('delete-for-everyone', { msgId: data.id }), 5000); // Contoh delay 5s
+    }
+  } else if (data.type === 'deleted') {
+    content = `<div class="bubble deleted-msg">Pesan ini telah dihapus</div>`;
+  }
 
-msg.addEventListener("input", () => {
-  socket.emit("typing");
-});
-socket.on("typing", () => {
-  setStatus("Sedang mengetik…");
-  clearTimeout(window.typingTimeout);
-  window.typingTimeout = setTimeout(() => setStatus("Online"), 2000);
-});
-
-socket.on("partner-left", () => {
-  setStatus("Offline");
-  disableChat();
-  refreshBtn.style.display = "inline-block";
-});
-
-function refreshChat() {
-  messages.innerHTML = "";
-  chat.style.display = "none";
-  searching.style.display = "flex";
-  enableChat();
-  setStatus("Online");
-
-  socket.emit("join", {
-    name: document.getElementById("name").value || "Anonim",
-    age: document.getElementById("age").value,
-    gender: document.getElementById("gender").value,
-    job: document.getElementById("job").value,
-    server: document.getElementById("server").value
-  });
-
-  refreshBtn.style.display = "none";
-}
-
-function disableChat() {
-  msg.disabled = true;
-  document.querySelector(".footer button").disabled = true;
-}
-
-function enableChat() {
-  msg.disabled = false;
-  document.querySelector(".footer button").disabled = false;
-}
-
-function logout() {
-  disableChat();
-  setStatus("Offline");
-  refreshBtn.style.display = "inline-block";
-  chat.style.display = "none";
-  searching.style.display = "none";
-  login.style.display = "flex";
-  partner = null;
-  msg.value = "";
-  location.reload();
-}
-
-function sendMessage() {
-  if (!msg.value || !partner) return;
-  socket.emit("message", msg.value);
-  addMsg(msg.value, "me", timeNow());
-  msg.value = "";
-}
-
-function openProfile() {
-  if (!partner) return;
-  profileContent.innerHTML = `
-    <b>Nama:</b> ${partner.name}<br>
-    <b>Umur:</b> ${partner.age}<br>
-    <b>Gender:</b> ${partner.gender || "-"}<br>
-    <b>Status:</b> ${partner.job || "-"}<br>
-    <b>Server:</b> ${partner.server}
+  div.innerHTML = `
+    ${content}
+    <div class="time">${time}</div>
   `;
-  profileModal.style.display = "flex";
-}
+  if (side === 'me') {
+    const action = document.createElement('div');
+    action.className = 'msg-action';
+    action.textContent = 'Hapus untuk semua';
+    action.onclick = () => deleteForEveryone(data.id);
+    div.appendChild(action);
+    setupLongPress(div, action);
+  }
 
-function closeProfile() { profileModal.style.display = "none"; }
-
-function addMsg(t, s, ti) {
-  messages.innerHTML += `
-    <div class="msg ${s}">
-      <div class="bubble">${t}</div>
-      <div class="time">${ti}</div>
-    </div>`;
-  messages.scrollTop = messages.scrollHeight;
+  document.getElementById("messages").appendChild(div);
+  div.scrollIntoView({ behavior: "smooth", block: "end" });
 }
 
 function timeNow() {
   const d = new Date();
-  return d.getHours().toString().padStart(2, "0") + ":" +
-         d.getMinutes().toString().padStart(2, "0");
+  return d.getHours().toString().padStart(2,"0") + ":" + d.getMinutes().toString().padStart(2,"0");
 }
 
-// ================== VIDEO CALL ==================
-let pc, localStream, isFront = true;
-const ice = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
-let callPending = false;
-let isLocalBig = false;
+function sendMessage() {
+  const input = document.getElementById("msg");
+  const text = input.value.trim();
+  if (!text || !partner) return;
 
-function swapVideo() {
-  const remote = document.getElementById("remoteVideo");
-  const local = document.getElementById("localVideo");
-
-  if (isLocalBig) {
-    remote.classList.remove("pip");
-    local.classList.add("pip");
-  } else {
-    local.classList.remove("pip");
-    remote.classList.add("pip");
-  }
-  isLocalBig = !isLocalBig;
-}
-localVideo.addEventListener("click", swapVideo);
-remoteVideo.addEventListener("click", swapVideo);
-
-function dragElement(el) {
-  let x = 0, y = 0, px = 0, py = 0;
-  el.onmousedown = dragMouseDown;
-
-  function dragMouseDown(e) {
-    e.preventDefault();
-    px = e.clientX;
-    py = e.clientY;
-    document.onmouseup = closeDrag;
-    document.onmousemove = elementDrag;
-  }
-
-  function elementDrag(e) {
-    e.preventDefault();
-    x = px - e.clientX;
-    y = py - e.clientY;
-    px = e.clientX;
-    py = e.clientY;
-
-    el.style.top = (el.offsetTop - y) + "px";
-    el.style.left = (el.offsetLeft - x) + "px";
-    el.style.bottom = "auto";
-    el.style.right = "auto";
-  }
-
-  function closeDrag() {
-    document.onmouseup = null;
-    document.onmousemove = null;
-  }
-}
-dragElement(localVideo);
-dragElement(remoteVideo);
-
-function callUser() {
-  if (!partner || callPending) return;
-  callPending = true;
-
-  waitingModal.style.display = "flex";
-  waitingText.innerText = `Menunggu ${partner.name} menerima panggilan...`;
-  callName.innerText = partner.name; 
-
-  socket.emit("call-user", { name: partner.name });
-
-  window.callTimeout = setTimeout(() => {
-    waitingModal.style.display = "none";  
-    callPending = false;
-    showAlert(`${partner.name} tidak menjawab panggilan`);
-
-    if (partner) socket.emit("cancel-call", { to: partner.name });
-  }, 30000);
+  const msgId = ++messageIdCounter;
+  socket.emit("message", { id: msgId, type: 'text', text });
+  addMsg({ id: msgId, type: 'text', text }, "me");
+  input.value = "";
+  input.focus();
 }
 
-socket.on("cancel-call", () => {
-  if (incomingCall.style.display === "flex") {
-    incomingCall.style.display = "none";
+function previewFile() {
+  selectedFile = document.getElementById('fileInput').files[0];
+  if (!selectedFile) return;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    document.getElementById('previewImage').src = e.target.result;
+    document.getElementById('previewImage').style.display = 'block';
+    document.getElementById('filePreviewModal').style.display = 'grid';
+  };
+  reader.readAsDataURL(selectedFile);
+}
+
+function sendFile() {
+  if (!selectedFile || !partner) return;
+
+  const caption = document.getElementById('captionInput').value.trim();
+  const viewOnce = document.getElementById('viewOnceCheckbox').checked;
+
+  const formData = new FormData();
+  formData.append('file', selectedFile);
+
+  // Asumsi upload ke server dan dapat URL (ganti dengan endpoint sebenarnya)
+  fetch('/upload', { method: 'POST', body: formData })
+    .then(res => res.json())
+    .then(data => {
+      const msgId = ++messageIdCounter;
+      socket.emit("message", { id: msgId, type: 'file', fileUrl: data.url, caption, viewOnce });
+      addMsg({ id: msgId, type: 'file', fileUrl: data.url, caption, viewOnce }, "me");
+    })
+    .catch(err => showAlert('Gagal upload file'));
+
+  cancelFilePreview();
+}
+
+function cancelFilePreview() {
+  selectedFile = null;
+  document.getElementById('previewImage').style.display = 'none';
+  document.getElementById('captionInput').value = '';
+  document.getElementById('viewOnceCheckbox').checked = false;
+  document.getElementById('filePreviewModal').style.display = 'none';
+}
+
+function setupLongPress(msgElement, actionElement) {
+  let pressTimer;
+  msgElement.addEventListener('touchstart', () => {
+    pressTimer = setTimeout(() => actionElement.style.display = 'block', 500);
+  });
+  msgElement.addEventListener('touchend', () => clearTimeout(pressTimer));
+  msgElement.addEventListener('touchmove', () => clearTimeout(pressTimer));
+}
+
+function deleteForEveryone(msgId) {
+  socket.emit('delete-for-everyone', { msgId });
+  updateMsgAsDeleted(msgId);
+}
+
+function updateMsgAsDeleted(msgId) {
+  const msgDiv = messagesMap[msgId];
+  if (msgDiv) {
+    msgDiv.innerHTML = `
+      <div class="bubble deleted-msg">Pesan ini telah dihapus</div>
+      <div class="time">${timeNow()}</div>
+    `;
   }
+}
+
+socket.on("matched", p => {
+  partner = p;
+  document.getElementById("searching").style.display = "none";
+  document.getElementById("chat").style.display = "flex";
+  document.getElementById("messages").innerHTML = "";
+  document.getElementById("partnerName").textContent = p.name;
+  document.getElementById("partnerStatus").textContent = "Online";
+  document.getElementById("partnerStatus").className = "partner-status status-online";
+  document.getElementById("msg").disabled = false;
+  document.querySelector(".footer button").disabled = false;
+  document.getElementById("refreshBtn").style.display = "none";
+  document.getElementById("videoCallBtn").style.display = "block";
 });
 
-socket.on("incoming-call", data => {
-  callerName.innerText = data.name;
-  callName.innerText = data.name; 
-  incomingCall.style.display = "flex";
+socket.on("message", data => addMsg(data, "other"));
 
-  if (window.incomingTimeout) clearTimeout(window.incomingTimeout);
-  window.incomingTimeout = setTimeout(() => {
-    if (incomingCall.style.display === "flex") {
-      incomingCall.style.display = "none";
-    }
-  }, 30000);
+socket.on("delete-for-everyone", ({ msgId }) => updateMsgAsDeleted(msgId));
+
+socket.on("typing", () => {
+  const el = document.getElementById("partnerStatus");
+  el.textContent = "Sedang mengetik…";
+  el.className = "partner-status status-typing";
+  clearTimeout(window.typingTm);
+  window.typingTm = setTimeout(() => {
+    el.textContent = "Online";
+    el.className = "partner-status status-online";
+  }, 2200);
 });
 
-async function acceptCall() {
-  incomingCall.style.display = "none";
-  await startMedia();
-  createPeer();
-  localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
-  socket.emit("accept-call");
-  videoScreen.style.display = "flex";
+document.getElementById("msg").oninput = () => socket.emit("typing");
+
+socket.on("partner-left", () => {
+  document.getElementById("partnerStatus").textContent = "Offline";
+  document.getElementById("partnerStatus").className = "partner-status status-offline";
+  document.getElementById("msg").disabled = true;
+  document.querySelector(".footer button").disabled = true;
+  document.getElementById("refreshBtn").style.display = "block";
+});
+
+// ─── Video Call ──────────────────────────────────
+async function startMedia() {
+  if (localStream) return;
+  try {
+    localStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: "user", width: {ideal:480}, height: {ideal:640} },
+      audio: true
+    });
+    const lv = document.getElementById("localVideo");
+    lv.srcObject = localStream;
+    lv.play().catch(()=>{});
+  } catch (err) {
+    showAlert("Tidak bisa mengakses kamera/mikrofon");
+    console.error(err);
+  }
 }
 
 function createPeer() {
-  if (pc) return;
+  if (pc) pc.close();
   pc = new RTCPeerConnection(ice);
 
   pc.ontrack = e => {
-    remoteVideo.srcObject = e.streams[0];
-    remoteVideo.style.transform = "scaleX(1)"; 
-    videoScreen.style.display = "flex";
+    const rv = document.getElementById("remoteVideo");
+    rv.srcObject = e.streams[0];
+    rv.play().catch(()=>{});
   };
 
   pc.onicecandidate = e => {
     if (e.candidate) socket.emit("ice", e.candidate);
   };
 
-  pc.onconnectionstatechange = checkSignal;
+  pc.onconnectionstatechange = () => {
+    updateConnectionUI();
+    checkSignal();
+  };
 }
 
+function updateConnectionUI() {
+  if (!pc) return;
+  const st = pc.connectionState;
+  if (st === "connected") {
+    document.getElementById("netStatus").style.display = "flex";
+  } else if (st === "disconnected" || st === "failed") {
+    document.getElementById("netStatus").style.display = "none";
+  }
+}
+
+async function updateLatency() {
+  if (!pc || pc.connectionState !== "connected") return;
+
+  try {
+    const stats = await pc.getStats();
+    let rtt = -1;
+
+    stats.forEach(report => {
+      if (report.type === 'candidate-pair' &&
+          (report.nominated || report.selectedOrState === 'selected' || report.state === 'succeeded') &&
+          report.currentRoundTripTime !== undefined &&
+          report.currentRoundTripTime > 0) {
+        rtt = Math.round(report.currentRoundTripTime * 1000);
+      }
+    });
+
+    if (rtt === -1) {
+      stats.forEach(report => {
+        if (report.type === 'candidate-pair' && report.currentRoundTripTime > 0) {
+          rtt = Math.round(report.currentRoundTripTime * 1000);
+        }
+      });
+    }
+
+    if (rtt === -1) {
+      stats.forEach(report => {
+        if (report.type === 'remote-inbound-rtp' && report.roundTripTime > 0) {
+          rtt = Math.round(report.roundTripTime * 1000);
+        }
+      });
+    }
+
+    const netLeft = document.getElementById("netLeft");
+    const netPill = document.getElementById("netStatus");
+
+    if (rtt > 0 && !isNaN(rtt)) {
+      lastRTT = rtt;
+      netLeft.textContent = `${lastRTT} ms`;
+
+      netPill.style.color = '#34d399';
+      netPill.style.borderColor = '#0f9d6e';
+
+      if (lastRTT > 150) {
+        netPill.style.color = '#f59e0b';
+        netPill.style.borderColor = '#d97706';
+      }
+      if (lastRTT > 300) {
+        netPill.style.color = '#ef4444';
+        netPill.style.borderColor = '#b91c1c';
+      }
+    } else {
+      netLeft.textContent = "— ms";
+      netPill.style.color = '#94a3b8';
+      netPill.style.borderColor = '#475569';
+    }
+  } catch (err) {
+    console.error("getStats error:", err);
+    document.getElementById("netLeft").textContent = "Err";
+  }
+}
+
+function checkSignal() {
+  if (!pc) return;
+  const state = pc.connectionState;
+  const netPill = document.getElementById("netStatus");
+
+  if (state === "connected") {
+    netPill.style.display = "flex";
+    updateLatency();
+    clearInterval(window.latencyInterval);
+    window.latencyInterval = setInterval(updateLatency, 1200);
+  } else if (state === "connecting") {
+    netPill.style.display = "flex";
+    document.getElementById("netLeft").textContent = "— ms";
+  } else {
+    netPill.style.display = "none";
+    clearInterval(window.latencyInterval);
+    lastRTT = 0;
+  }
+}
+
+async function callUser() {
+  if (!partner || callPending) return;
+  callPending = true;
+
+  document.getElementById("waitingModal").style.display = "grid";
+  document.getElementById("waitingText").textContent = `Menghubungi ${partner.name}...`;
+  socket.emit("call-user", { name: partner.name });
+
+  window.callTm = setTimeout(() => {
+    document.getElementById("waitingModal").style.display = "none";
+    callPending = false;
+    showAlert("Tidak ada jawaban dari partner");
+    socket.emit("cancel-call", { to: partner.name });
+  }, 30000);
+}
+
+socket.on("incoming-call", d => {
+  document.getElementById("callerName").textContent = d.name;
+  document.getElementById("incomingCall").style.display = "grid";
+});
+
 socket.on("call-accepted", async () => {
-  clearTimeout(window.callTimeout);
-  waitingModal.style.display = "none";
+  clearTimeout(window.callTm);
+  document.getElementById("waitingModal").style.display = "none";
   callPending = false;
 
   await startMedia();
@@ -581,142 +1031,195 @@ socket.on("call-accepted", async () => {
   await pc.setLocalDescription(offer);
   socket.emit("offer", offer);
 
-  videoScreen.style.display = "flex";
+  resetVideoLayout();
+  document.getElementById("videoScreen").style.display = "flex";
+  document.getElementById("callName").textContent = partner.name;
 });
 
-socket.on("offer", async offer => {
+function resetVideoLayout() {
+  const local  = document.getElementById("localVideo");
+  const remote = document.getElementById("remoteVideo");
+
+  isPipSwapped = false;
+
+  local.classList.remove("full");
+  local.classList.add("pip");
+  remote.classList.remove("pip");
+  remote.classList.add("full");
+
+  local.style.transform = "scaleX(-1)";  // mirror self
+  remote.style.transform = "";
+
+  local.style.zIndex = "10";
+  remote.style.zIndex = "5";
+}
+
+socket.on("offer", async o => {
   if (!pc) createPeer();
-  await pc.setRemoteDescription(offer);
-
-  const answer = await pc.createAnswer();
-  await pc.setLocalDescription(answer);
-  socket.emit("answer", answer);
+  await pc.setRemoteDescription(o);
+  const ans = await pc.createAnswer();
+  await pc.setLocalDescription(ans);
+  socket.emit("answer", ans);
 });
 
-socket.on("answer", async answer => {
-  await pc.setRemoteDescription(answer);
-});
+socket.on("answer", a => pc.setRemoteDescription(a));
 
-socket.on("ice", async candidate => {
-  if (candidate && pc) await pc.addIceCandidate(candidate);
-});
+socket.on("ice", c => pc?.addIceCandidate(new RTCIceCandidate(c)));
+
+function acceptCall() {
+  document.getElementById("incomingCall").style.display = "none";
+  socket.emit("accept-call");
+
+  startMedia().then(() => {
+    createPeer();
+    localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
+    resetVideoLayout();
+    document.getElementById("videoScreen").style.display = "flex";
+  });
+}
 
 function rejectCall() {
-  incomingCall.style.display = "none";
+  document.getElementById("incomingCall").style.display = "none";
   socket.emit("reject-call");
 }
 
 socket.on("call-rejected", () => {
-  clearTimeout(window.callTimeout);
-  waitingModal.style.display = "none";
-  callPending = false;
-
-  rejectedText.innerText = `${partner ? partner.name : 'Partner'} menolak panggilan.`;
-  rejectedModal.style.display = "flex";
+  clearTimeout(window.callTm);
+  document.getElementById("waitingModal").style.display = "none";
+  document.getElementById("rejectedText").textContent = `${partner?.name || "Partner"} menolak panggilan.`;
+  document.getElementById("rejectedModal").style.display = "grid";
 });
 
-function closeRejected() {
-  rejectedModal.style.display = "none";
-}
-
-socket.on("end-call", () => {
+function endCall() {
   if (pc) pc.close();
   if (localStream) localStream.getTracks().forEach(t => t.stop());
-  localStream = null;
-  pc = null;
-  remoteVideo.srcObject = null;
-  videoScreen.style.display = "none";
-  document.querySelector(".net-status").style.display = "none";
-});
+  document.getElementById("videoScreen").style.display = "none";
+  document.getElementById("netStatus").style.display = "none";
+  socket.emit("end-call");
+  pc = localStream = null;
+  isPipSwapped = false;
+}
 
-async function startMedia() {
-  if (localStream) return;
+socket.on("end-call", endCall);
+
+// ─── PIP Swap ────────────────────────────────────
+document.getElementById("localVideo").onclick = function() {
+  const local  = document.getElementById("localVideo");
+  const remote = document.getElementById("remoteVideo");
+
+  isPipSwapped = !isPipSwapped;
+
+  if (isPipSwapped) {
+    // Local full, Remote pip
+    local.classList.remove("pip");
+    local.classList.add("full");
+    remote.classList.remove("full");
+    remote.classList.add("pip");
+
+    local.style.transform = "scaleX(-1)";  // tetap mirror
+    remote.style.transform = "";           // atau scaleX(-1) jika mau mirror remote
+
+    showToast("Layar kamu jadi besar");
+  } else {
+    // Kembali default
+    local.classList.remove("full");
+    local.classList.add("pip");
+    remote.classList.remove("pip");
+    remote.classList.add("full");
+
+    local.style.transform = "scaleX(-1)";
+    remote.style.transform = "";
+
+    showToast("Kembali ke mode normal");
+  }
+
+  local.style.zIndex  = isPipSwapped ? "5"  : "10";
+  remote.style.zIndex = isPipSwapped ? "10" : "5";
+};
+
+// ─── Camera Switch ───────────────────────────────
+async function switchCamera() {
+  if (!localStream) {
+    showAlert("Kamera belum aktif");
+    return;
+  }
+
   try {
-    localStream = await navigator.mediaDevices.getUserMedia({
-      video: {
-        facingMode: "user",
-        width: { ideal: 480 },  
-        height: { ideal: 640 },
-        frameRate: { ideal: 30 }
-      },
-      audio: true
+    const videoTrack = localStream.getVideoTracks()[0];
+    if (videoTrack) {
+      videoTrack.stop();
+      localStream.removeTrack(videoTrack);
+    }
+
+    const mode = isFront ? "environment" : "user";
+    isFront = !isFront;
+
+    const newStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: mode, width: { ideal: 480 }, height: { ideal: 640 } }
     });
 
+    const newVideoTrack = newStream.getVideoTracks()[0];
+    localStream.addTrack(newVideoTrack);
+
+    const localVideo = document.getElementById("localVideo");
     localVideo.srcObject = localStream;
-    localVideo.muted = true;
-    localVideo.style.transform = "scaleX(1)"; 
-    await localVideo.play();
-  } catch (err) {
-    showAlert("Kamera / mikrofon tidak diizinkan");
-    console.error(err);
+    localVideo.play().catch(()=>{});
+
+    localVideo.style.transform = isFront ? "scaleX(-1)" : "scaleX(1)";
+
+    if (pc) {
+      const sender = pc.getSenders().find(s => s.track && s.track.kind === "video");
+      if (sender) await sender.replaceTrack(newVideoTrack);
+    }
+
+    showToast(`Kamera ${isFront ? "depan" : "belakang"} aktif`);
+  } catch (e) {
+    console.error("Gagal switch kamera:", e);
+    showAlert("Gagal mengganti kamera");
   }
 }
 
 function toggleMic() {
   if (!localStream) return;
-  const t = localStream.getAudioTracks()[0];
-  t.enabled = !t.enabled;
-  micBtn.className = t.enabled ? "bi bi-mic-fill" : "bi bi-mic-mute-fill";
-  socket.emit("media-status", { mic: t.enabled });
+  const tr = localStream.getAudioTracks()[0];
+  tr.enabled = !tr.enabled;
+  document.getElementById("micBtn").className = tr.enabled ? "bi bi-mic-fill" : "bi bi-mic-mute-fill muted";
+  socket.emit("media-status", { mic: tr.enabled });
 }
 
 function toggleCam() {
   if (!localStream) return;
-  const t = localStream.getVideoTracks()[0];
-  t.enabled = !t.enabled;
-  camBtn.className = t.enabled ? "bi bi-camera-video-fill" : "bi bi-camera-video-off-fill";
-  socket.emit("media-status", { cam: t.enabled });
+  const tr = localStream.getVideoTracks()[0];
+  tr.enabled = !tr.enabled;
+  document.getElementById("camBtn").className = tr.enabled ? "bi bi-camera-video-fill" : "bi bi-camera-video-off-fill muted";
+  socket.emit("media-status", { cam: tr.enabled });
 }
 
-async function switchCamera() {
-  if (!localStream) return;
-  
-  isFront = !isFront;
-
-  localStream.getTracks().forEach(t => t.stop());
-
-  localStream = await navigator.mediaDevices.getUserMedia({
-    video: { facingMode: isFront ? "user" : "environment", width: {ideal:480}, height: {ideal:640}, frameRate: {ideal:30} },
-    audio: true
-  });
-
-  localVideo.srcObject = localStream;
-  localVideo.muted = true;
-  await localVideo.play();
-
-  if (pc) {
-    const sender = pc.getSenders().find(s => s.track && s.track.kind === "video");
-    if (sender) sender.replaceTrack(localStream.getVideoTracks()[0]);
-  }
+// ─── Utils ───────────────────────────────────────
+function openProfile() {
+  if (!partner) return;
+  document.getElementById("profileContent").innerHTML = `
+    <div><b>Nama:</b> ${partner.name}</div>
+    <div><b>Umur:</b> ${partner.age}</div>
+    <div><b>Gender:</b> ${partner.gender || "?"}</div>
+    <div><b>Status:</b> ${partner.job || "-"}</div>
+    <div><b>Server:</b> ${partner.server}</div>
+  `;
+  document.getElementById("profileModal").style.display = "grid";
 }
 
-function endCall() {
-  if (pc) pc.close();
-  if (localStream) localStream.getTracks().forEach(t => t.stop());
-  localStream = null;
-  pc = null;
-  remoteVideo.srcObject = null;
-  videoScreen.style.display = "none";
-  socket.emit("end-call");
+function closeProfile() { document.getElementById("profileModal").style.display = "none"; }
+function closeRejected() { document.getElementById("rejectedModal").style.display = "none"; }
+
+function refreshChat() {
+  document.getElementById("chat").style.display = "none";
+  document.getElementById("searching").style.display = "flex";
+  if (window.userData) socket.emit("join", window.userData);
 }
 
-function checkSignal() {
-  const s = pc.connectionState;
-  if (s === "connected") {
-    signalDot.textContent = "🟢";
-    netLeft.textContent = "Stabil";
-    signalStatus.textContent = "🟢 Stabil"; 
-  }
-  if (s === "disconnected") {
-    signalDot.textContent = "🟡";
-    netLeft.textContent = "Lemah";
-    signalStatus.textContent = "🟡 Lemah"; 
-  }
-  if (s === "failed") {
-    signalDot.textContent = "🔴";
-    netLeft.textContent = "Terputus";
-    signalStatus.textContent = "🔴 Terputus";
-  }
+function logout() {
+  socket.disconnect();
+  location.reload();
 }
 </script>
 </body>
