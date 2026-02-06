@@ -218,12 +218,12 @@
 .vo-close-btn {
   position: absolute;
   bottom: 20px;
+  max-width: 90vw;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(0,0,0,0.7);
+  background: #161b22;
   color: white;
   border: none;
-  border-radius: 999px;
   padding: 12px 28px;
   font-size: 1rem;
   font-weight: 500;
@@ -233,7 +233,7 @@
 }
 
 .vo-close-btn:hover {
-  background: rgba(0,0,0,0.85);
+  background: #161b22;
 }
 /* Pastikan .screen tetap full height & center */
 .screen {
@@ -629,11 +629,9 @@ video#remoteVideo,
 
 .msg-action {
   position: absolute;
-  top: 50%;                        /* tengah secara vertikal */
-  transform: translateY(-50%);     /* biar benar-benar rata tengah vertikal */
-  left: -80px;                     /* jarak dari kiri bubble → sesuaikan kalau terlalu jauh/rapat */
-  right: auto;                     /* pastikan tidak ikut right */
-  
+  top: 50%;
+  transform: translateY(-50%);
+  left: -80px;
   background: var(--surface-2);
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -642,26 +640,32 @@ video#remoteVideo,
   color: var(--danger);
   cursor: pointer;
   z-index: 10;
-  display: none;
+  display: none;               /* PASTIKAN DEFAULT NONE */
   white-space: nowrap;
   user-select: none;
   box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  opacity: 0;
+  transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
-/* Muncul saat hover atau long-press pada pesan sendiri */
+/* Muncul saat hover atau long-press */
 .msg.me:hover .msg-action,
-.msg.me.long-press .msg-action {
+.msg.me.long-press .msg-action,
+.msg.me.clicked .msg-action {   /* opsional: jika ingin muncul saat klik */
   display: block;
+  opacity: 1;
+  transform: translateY(-50%) translateX(5px); /* sedikit efek geser */
 }
 
-/* Opsional: supaya lebih rapi di layar kecil (mobile) */
+/* Di mobile, long-press lebih dominan */
 @media (max-width: 500px) {
   .msg-action {
-    left: -70px;          /* agak lebih dekat biar tidak keluar layar */
+    left: -70px;
     font-size: 0.82rem;
     padding: 5px 10px;
   }
 }
+
 .card:not(.hidden) {
       opacity: 1;
       transform: translateY(0);
@@ -796,6 +800,20 @@ video#remoteVideo,
   <button class="vo-close-btn" onclick="closeViewOnce()">Tutup</button>
 </div>
 <!-- MODALS -->
+<!-- Modal Konfirmasi Hapus Pesan -->
+<div id="deleteConfirmModal" class="modal" style="display:none;">
+  <div class="modal-box">
+    <h3>Konfirmasi Hapus</h3>
+    <p style="color: #ccc;margin:1.2rem 0; font-size:1.05rem;">
+      Hapus pesan ini untuk semua orang?<br>
+    </p>
+    <div style="display:flex; gap:12px; margin-top:1rem;">
+      <button onclick="confirmDelete()" style="flex:1; background:var(--danger);">Hapus</button>
+      <button onclick="closeDeleteModal()" style="flex:1;">Batal</button>
+    </div>
+  </div>
+</div>
+
 <div id="incomingCall" class="modal">
   <div class="modal-box">
     <h3>Panggilan Video Masuk</h3>
@@ -837,7 +855,7 @@ video#remoteVideo,
 
 <div id="filePreviewModal" class="modal" style="display:none;">
   <div class="modal-box" style="max-width: 400px; padding: 24px 20px;">
-    <h3 style="margin-bottom: 1.2rem;">Pratinjau File</h3>
+    <h3 style="margin-bottom: 1.2rem;">Pratinjau Gambar</h3>
     
     <!-- Preview gambar/video lebih dulu, tepat di bawah judul -->
     <div style="text-align: center; margin-bottom: 1.5rem;">
@@ -887,27 +905,79 @@ const ice = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
 
 socket.on('message-confirmed', ({ id }) => {
   console.log('Pesan dikonfirmasi, ID:', id);
-  // Cari pesan terakhir dari "me" yang belum punya ID, lalu update
-  const messages = document.querySelectorAll('.msg.me');
-  const lastMsg = messages[messages.length - 1];
-  if (lastMsg && !lastMsg.dataset.msgId.startsWith('temp-')) {
-    // Sudah punya ID, skip
+
+  // Cari pesan terakhir me yang masih temp
+  const lastMsg = document.querySelector('.msg.me:last-child');
+  if (lastMsg && lastMsg.dataset.msgId.startsWith('temp-')) {
+    const oldTempId = lastMsg.dataset.msgId;
+    lastMsg.dataset.msgId = id;
+    messagesMap[id] = lastMsg;
+    delete messagesMap[oldTempId];
+
+    // Tampilkan tombol hapus (jika ada)
+    const action = lastMsg.querySelector('.msg-action');
+    if (action) {
+      action.style.display = 'block';  // muncul setelah confirmed
+    }
+  }
+});
+
+// Variabel untuk menyimpan ID pesan yang akan dihapus
+// Variabel untuk menyimpan ID pesan yang akan dihapus
+let pendingDeleteMsgId = null;
+let pendingDeleteBubble = null;
+let pendingDeleteAction = null;
+
+// Buka modal konfirmasi hapus
+function openDeleteConfirm(msgId, bubbleElement, actionElement) {
+  pendingDeleteMsgId = msgId;
+  pendingDeleteBubble = bubbleElement;
+  pendingDeleteAction = actionElement;
+
+  // Pastikan tombol tetap terlihat selama modal terbuka
+  if (actionElement) actionElement.style.display = 'block';
+
+  document.getElementById("deleteConfirmModal").style.display = "grid";
+}
+
+// Tutup modal tanpa hapus → sembunyikan tombol hapus lagi
+function closeDeleteModal() {
+  if (pendingDeleteAction) {
+    pendingDeleteAction.style.display = 'none';  // <-- KUNCI: sembunyikan kembali
+  }
+
+  pendingDeleteMsgId = null;
+  pendingDeleteBubble = null;
+  pendingDeleteAction = null;
+  document.getElementById("deleteConfirmModal").style.display = "none";
+}
+
+// Konfirmasi dan lakukan hapus → setelah hapus, tombol sudah di-remove jadi tidak perlu hide lagi
+function confirmDelete() {
+  if (!pendingDeleteMsgId) {
+    closeDeleteModal();
     return;
   }
 
-  // Update dataset dan messagesMap
-  lastMsg.dataset.msgId = id;
-  messagesMap[id] = lastMsg;
-  messagesMap[lastMsg.dataset.msgId] = undefined; // hapus temp
-
-  // Tampilkan tombol hapus kalau belum ada
-  if (!lastMsg.querySelector('.msg-action')) {
-    const action = document.createElement('div');
-    action.className = 'msg-action';
-    action.onclick = () => deleteForEveryone(id);
-    lastMsg.appendChild(action);
+  // Update UI lokal dulu
+  if (pendingDeleteBubble) {
+    pendingDeleteBubble.innerHTML = 'Pesan ini telah dihapus';
+    pendingDeleteBubble.className = 'bubble deleted-msg';
   }
-});
+
+  // Hapus tombol aksi (sudah di-remove di sini)
+  if (pendingDeleteAction) {
+    pendingDeleteAction.remove();
+  }
+
+  // Kirim ke server
+  socket.emit('delete-for-everyone', { msgId: pendingDeleteMsgId });
+
+  showToast("Pesan dihapus untuk semua");
+
+  // Reset dan tutup modal
+  closeDeleteModal();
+}
 
 function showToast(msg) {
   const t = document.getElementById("actionToast");
@@ -995,10 +1065,11 @@ function addMsg(data, side, time = timeNow()) {
   // ── Penanganan ID pesan ───────────────────────────────────────────────
   let msgId = data.id;
   if (msgId) {
+    // Pesan sudah punya ID permanen dari server
     div.dataset.msgId = msgId;
     messagesMap[msgId] = div;
   } else {
-    // Pesan lokal sementara (belum confirmed server)
+    // Pesan lokal sementara (optimistic UI, belum confirmed)
     const tempId = 'temp-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
     div.dataset.msgId = tempId;
     messagesMap[tempId] = div;
@@ -1056,43 +1127,31 @@ function addMsg(data, side, time = timeNow()) {
     <div class="time">${time}</div>
   `;
 
-  // ── Tambah tombol "Hapus untuk semua" HANYA untuk pesan sendiri ───────
-  if (side === 'me') {
+  // ── Tambah tombol "Hapus" HANYA untuk pesan sendiri ──────────────────
+  if (side === 'me' && data.type !== 'deleted') {
     const action = document.createElement('div');
     action.className = 'msg-action';
-    action.textContent = data.type === 'deleted' ? '' : 'Hapus';
+    action.textContent = 'Hapus';
+    action.style.display = 'none';  // PASTI SEMBUNYI DI AWAL
 
-    if (data.type !== 'deleted') {
-      action.onclick = () => {
-        const currentMsgId = div.dataset.msgId;
+    action.onclick = (e) => {
+      e.stopPropagation(); // cegah event bubble ke pesan
+      const currentMsgId = div.dataset.msgId;
 
-        if (!currentMsgId || currentMsgId.startsWith('temp-')) {
-          showToast("Pesan belum terkirim sepenuhnya ke server");
-          return;
-        }
+      if (currentMsgId.startsWith('temp-')) {
+        showToast("Pesan belum terkirim sepenuhnya ke server");
+        return;
+      }
 
-        if (!confirm("Hapus pesan ini untuk semua orang?")) {
-          return;
-        }
+      // Buka modal konfirmasi
+      const bubble = div.querySelector('.bubble');
+      openDeleteConfirm(currentMsgId, bubble, action);
+    };
 
-        const bubble = div.querySelector('.bubble');
-        if (bubble) {
-          bubble.innerHTML = 'Pesan ini telah dihapus';
-          bubble.className = 'bubble deleted-msg';
-        }
+    div.appendChild(action);
 
-        action.remove();
-
-        socket.emit('delete-for-everyone', { msgId: currentMsgId });
-
-        showToast("Pesan dihapus");
-      };
-
-      div.appendChild(action);
-
-      // Support long-press di mobile
-      setupLongPress(div, action);
-    }
+    // Support long-press dan klik untuk menampilkan tombol sementara
+    setupInteractionForDelete(div, action);
   }
 
   // ── Masukkan ke chat & scroll otomatis ────────────────────────────────
@@ -1214,7 +1273,7 @@ async function sendFile() {
 
   } catch (err) {
     console.error("Gagal upload ke Cloudinary:", err);
-    showAlert("Gagal mengupload gambar:\n" + (err.message || "Cek koneksi / Cloudinary config"));
+    showAlert("Gagal mengirim gambar:\n" + (err.message || "Cek koneksi"));
   }
 
   // Reset semuanya setelah selesai (sukses atau gagal)
@@ -1232,13 +1291,46 @@ function cancelFilePreview() {
   document.getElementById('filePreviewModal').style.display = 'none';
 }
 
-function setupLongPress(msgElement, actionElement) {
+function setupInteractionForDelete(msgElement, actionElement) {
   let pressTimer;
+
+  // Long-press (mobile)
   msgElement.addEventListener('touchstart', () => {
-    pressTimer = setTimeout(() => actionElement.style.display = 'block', 500);
+    pressTimer = setTimeout(() => {
+      msgElement.classList.add('long-press');
+      actionElement.style.display = 'block';
+    }, 500); // 0.5 detik untuk long press
   });
-  msgElement.addEventListener('touchend', () => clearTimeout(pressTimer));
-  msgElement.addEventListener('touchmove', () => clearTimeout(pressTimer));
+
+  msgElement.addEventListener('touchend', () => {
+    clearTimeout(pressTimer);
+    setTimeout(() => {
+      msgElement.classList.remove('long-press');
+      actionElement.style.display = 'none'; // hilang setelah lepas
+    }, 3000); // sedikit delay agar tidak langsung hilang
+  });
+
+  msgElement.addEventListener('touchmove', () => {
+    clearTimeout(pressTimer);
+    msgElement.classList.remove('long-press');
+    actionElement.style.display = 'none';
+  });
+
+  // Hover (desktop) sudah ditangani oleh CSS :hover
+
+  // Opsional: Klik sekali untuk toggle tombol hapus (bisa dihapus jika tidak mau)
+  msgElement.addEventListener('click', (e) => {
+    // Jangan toggle jika klik tombol hapus itu sendiri
+    if (e.target === actionElement || actionElement.contains(e.target)) return;
+
+    if (msgElement.classList.contains('clicked')) {
+      msgElement.classList.remove('clicked');
+      actionElement.style.display = 'none';
+    } else {
+      msgElement.classList.add('clicked');
+      actionElement.style.display = 'block';
+    }
+  });
 }
 
 function deleteForEveryone(msgId) {
