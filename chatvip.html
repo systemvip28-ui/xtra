@@ -346,7 +346,11 @@
       object-fit: cover;
       transition: all 0.4s ease;
     }
-
+/* Mirror semua video seperti cermin (local + remote) */
+#localVideo,
+#remoteVideo {
+  transform: scaleX(-1) !important;   /* flip horizontal seperti melihat cermin */
+}
     /* PIP (picture-in-picture) style - KONSISTEN di semua kondisi */
     #localVideo.pip,
     #remoteVideo.pip {
@@ -377,7 +381,7 @@
     }
 
 #localVideo {
-  /* transform: scaleX(-1);  ← di-comment atau dihapus */
+  transform: scaleX(-1);
 }
 
     .video-footer {
@@ -1109,11 +1113,14 @@ async function startMedia() {
       video: { facingMode: "user" },
       audio: true
     });
-    document.getElementById("localVideo").srcObject = localStream;
+    const localVideo = document.getElementById("localVideo");
+    localVideo.srcObject = localStream;
+    localVideo.style.transform = "scaleX(-1)";   // awal depan → mirror
+    localVideo.play().catch(e => console.log("Play error:", e));
   } catch (err) {
     console.error("getUserMedia gagal:", err);
     showAlert("Tidak bisa akses kamera/mikrofon: " + err.message);
-    return false;  // penting: return false kalau gagal
+    return false;
   }
   return true;
 }
@@ -1418,8 +1425,8 @@ function resetVideoLayout() {
   remote.classList.remove("pip");
   remote.classList.add("full");
 
-  local.style.transform = "";
-  remote.style.transform = "";
+  local.style.transform  = isFront ? "scaleX(-1)" : "none";  // ikuti status kamera
+  remote.style.transform = "none";  // remote jangan mirror
 
   local.style.zIndex = "10";
   remote.style.zIndex = "5";
@@ -1506,25 +1513,23 @@ document.getElementById("localVideo").onclick = function() {
   isPipSwapped = !isPipSwapped;
 
   if (isPipSwapped) {
-    // Local full, Remote pip
     local.classList.remove("pip");
     local.classList.add("full");
     remote.classList.remove("full");
     remote.classList.add("pip");
 
-    local.style.transform = "";  // tetap mirror
-    remote.style.transform = "";           // atau scaleX(-1) jika mau mirror remote
+    local.style.transform  = isFront ? "scaleX(-1)" : "none";
+    remote.style.transform = "none";
 
     showToast("Layar kamu jadi besar");
   } else {
-    // Kembali default
     local.classList.remove("full");
     local.classList.add("pip");
     remote.classList.remove("pip");
     remote.classList.add("full");
 
-    local.style.transform = "";
-    remote.style.transform = "";
+    local.style.transform  = isFront ? "scaleX(-1)" : "none";
+    remote.style.transform = "none";
 
     showToast("Kembali ke mode normal");
   }
@@ -1541,21 +1546,21 @@ async function switchCamera() {
   }
 
   try {
-    // 1. Matikan track video lama (penting!)
+    // 1. Matikan track video lama
     const oldVideoTrack = localStream.getVideoTracks()[0];
     if (oldVideoTrack) {
-      oldVideoTrack.stop();           // release hardware lock
-      localStream.removeTrack(oldVideoTrack);  // hapus dari stream
+      oldVideoTrack.stop();
+      localStream.removeTrack(oldVideoTrack);
     }
 
     // 2. Tentukan mode baru
     const mode = isFront ? "environment" : "user";
     isFront = !isFront;
 
-    // 3. Request stream baru dengan facingMode
+    // 3. Request stream baru
     const newConstraints = {
       video: {
-        facingMode: { exact: mode },   // exact biar paksa
+        facingMode: { exact: mode },
         width: { ideal: 480 },
         height: { ideal: 640 },
         frameRate: { ideal: 30 }
@@ -1564,11 +1569,11 @@ async function switchCamera() {
 
     const newStream = await navigator.mediaDevices.getUserMedia(newConstraints);
 
-    // 4. Ambil track video baru
+    // 4. Ambil track baru
     const newVideoTrack = newStream.getVideoTracks()[0];
     if (!newVideoTrack) throw new Error("Tidak ada track video baru");
 
-    // 5. Tambahkan ke localStream (untuk tampilan lokal)
+    // 5. Tambahkan ke localStream
     localStream.addTrack(newVideoTrack);
 
     // 6. Update tampilan lokal
@@ -1576,15 +1581,15 @@ async function switchCamera() {
     localVideo.srcObject = localStream;
     localVideo.play().catch(e => console.log("Play error:", e));
 
-    // 7. Mirror hanya kalau front camera
-    localVideo.style.transform = "";   // tidak mirror sama sekali
+    // 7. Mirror hanya kalau kamera depan (INI TEMPATNYA!)
+    localVideo.style.transform = isFront ? "scaleX(-1)" : "none";
 
-    // 8. Ganti track di peer connection (kirim ke remote)
+    // 8. Ganti track di peer connection
     if (pc) {
       const videoSender = pc.getSenders().find(s => s.track && s.track.kind === "video");
       if (videoSender) {
         await videoSender.replaceTrack(newVideoTrack);
-        console.log("Track video berhasil diganti di peer connection");
+        console.log("Track video berhasil diganti");
       } else {
         console.warn("Tidak menemukan video sender");
       }
@@ -1593,11 +1598,9 @@ async function switchCamera() {
     showToast(`Kamera ${isFront ? "depan" : "belakang"} aktif`);
 
   } catch (err) {
-    console.error("Switch camera gagal:", err.name, err.message);
+    console.error("Switch camera gagal:", err);
     showAlert("Gagal ganti kamera: " + (err.message || "Coba restart halaman"));
-
-    // Optional: kembalikan ke mode sebelumnya kalau gagal
-    isFront = !isFront;
+    isFront = !isFront; // rollback kalau gagal
   }
 }
 
