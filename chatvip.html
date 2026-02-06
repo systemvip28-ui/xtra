@@ -8,87 +8,10 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"/>
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 
-<style> :root { --bg: #0d1117; --surface: #161b22; --surface-2: #1f2937; --accent: #10b981; --accent-dark:#059669; --danger: #ef4444; --warning: #f59e0b; --success: #10b981; --text: #e2e8f0; --text-sec: #94a3b8; --border: #30363d; --me: #065f46; --other: #1e293b; } * { margin: 0; padding: 0; box-sizing: border-box; } html, body { height: 100%; font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; background: var(--bg); color: var(--text); overflow: hidden; } .screen { height: 100dvh; display: grid; place-items: center; padding: 16px; } .card { width: 100%; max-width: 420px; background: var(--surface); border-radius: 20px; border: 1px solid var(--border); padding: 28px 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.4); } .logo-big { font-size: 3.8rem; margin-bottom: 0.5rem; text-align: center; } h1, h2, h3 { text-align: center; } h1 { font-size: 1.75rem; font-weight: 700; margin-bottom: 0.5rem; } h2 { margin-bottom: 1.5rem; } .subtitle { color: var(--text-sec); text-align: center; font-size: 0.95rem; margin-bottom: 1.8rem; } input, select, button { width: 100%; padding: 14px 16px; margin-bottom: 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2); color: white; font-size: 1rem; } input::placeholder, select option:disabled { color: #64748b; } button { background: var(--accent); color: white; font-weight: 600; border: none; cursor: pointer; transition: all 0.2s; } button:hover { background: var(--accent-dark); transform: translateY(-1px); } button:active { transform: translateY(0); } .btn-danger { background: var(--danger); } .btn-danger:hover { background: #dc2626; } .view-once-wrapper, .normal-image-wrapper { cursor: pointer; } .normal-image-wrapper img { transition: transform 0.2s; } .normal-image-wrapper:hover img { transform: scale(1.03); } .view-once-wrapper { position: relative; cursor: pointer; user-select: none; border-radius: 12px; overflow: hidden; background: #0f172a; aspect-ratio: 3/4; max-width: 260px; margin: 4px 0; } .view-once-blur { position: absolute; inset: 0; background: rgba(15,23,42,0.92); backdrop-filter: blur(10px); display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; font-size: 1.4rem; gap: 8px; z-index: 2; transition: opacity 0.3s; } .view-once-blur.hidden { opacity: 0; pointer-events: none; } .view-once-icon { font-size: 2.8rem; color: var(--text-sec); } .view-once-text { font-size: 0.9rem; opacity: 0.9; text-align: center; max-width: 80%; } #viewOnceModal { position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 400; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 16px; } .vo-header { width: 100%; max-width: 420px; color: white; font-size: 1.1rem; font-weight: 600; padding: 12px 16px; background: rgba(30,41,59,0.6); border-radius: 12px 12px 0 0; text-align: center; backdrop-filter: blur(8px); } .vo-content { position: relative; max-width: 90vw; max-height: 70vh; border-radius: 0 0 12px 12px; overflow: hidden; background: #000; } .vo-img { max-width: 100%; max-height: 70vh; object-fit: contain; display: block; } .vo-close-btn { position: absolute; bottom: 20px; max-width: 90vw; left: 50%; transform: translateX(-50%); background: #161b22; color: white; border: none; padding: 12px 28px; font-size: 1rem; font-weight: 500; cursor: pointer; backdrop-filter: blur(6px); box-shadow: 0 4px 15px rgba(0,0,0,0.5); } .vo-close-btn:hover { background: #161b22; } .screen { height: 100dvh; display: flex; justify-content: center; align-items: center; padding: 16px; } .searching-container { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.8rem; text-align: center; max-width: 320px; width: 100%; } .searching-text { font-size: 1.25rem; font-weight: 500; opacity: 0.95; color: var(--text); } .searching-subtext { font-size: 0.95rem; color: var(--text-sec); line-height: 1.4; margin-top: 0.5rem; } #searching { opacity: 0; transition: opacity 0.4s ease; } #searching[style*="display: flex"], #searching[style*="display:block"] { opacity: 1; } .loader { width: 48px; height: 48px; border: 5px solid #2d3748; border-top: 5px solid var(--accent); border-radius: 50%; animation: spin 1s linear infinite; } @keyframes spin { to { transform: rotate(360deg); } } #chat { display: none; flex-direction: column; height: 100dvh; } .header { height: 64px; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 16px; font-weight: 500; } .partner-info { line-height: 1.3; } .partner-name { font-size: 1.1rem; font-weight: 600; } .partner-status { font-size: 0.82rem; opacity: 0.8; } .status-online { color: #34d399; } .status-offline { color: #f87171; } .status-typing { color: #fbbf24; font-style: italic; } .encryption-info { display: flex; align-items: center; justify-content: center; background: var(--surface-2); padding: 6px 12px; border-bottom: 1px solid var(--border); font-size: 0.85rem; color: var(--text-sec); gap: 6px; } .encryption-info i { font-size: 1rem; color: var(--success); } #messages { flex: 1; padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; } .msg { max-width: 78%; display: flex; flex-direction: column; position: relative; user-select: none; } .me { align-self: flex-end; } .other { align-self: flex-start; } .bubble { padding: 10px 14px; border-radius: 18px; font-size: 0.96rem; line-height: 1.4; word-break: break-word; } .me .bubble { background: var(--me); border-bottom-right-radius: 4px; } .other .bubble { background: var(--other); border-bottom-left-radius: 4px; } .time { font-size: 0.68rem; opacity: 0.6; margin-top: 3px; align-self: flex-end; } .file-preview { max-width: 100%; max-height: 200px; border-radius: 8px; } .view-once { opacity: 0.7; font-style: italic; } .deleted-msg { font-style: italic; color: var(--text-sec); } .footer { padding: 12px 16px; background: var(--surface); border-top: 1px solid var(--border); display: flex; gap: 10px; } .footer input { flex: 1; border-radius: 999px; padding: 12px 20px; border: none; } .footer button { width: 48px; height: 48px; border-radius: 50%; font-size: 1.4rem; display: grid; place-items: center; padding: 0; } .video-wrap { position: fixed; inset: 0; background: black; display: none; flex-direction: column; z-index: 100; } .video-header { height: 56px; background: rgba(0,0,0,0.6); color: white; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; font-size: 1.05rem; backdrop-filter: blur(10px); } .video-body { flex: 1; position: relative; background: #000; } video { transform: scaleX(-1) !important; } video { width: 100%; height: 100%; object-fit: cover; transition: all 0.4s ease; } video#localVideo, video#remoteVideo, #localVideo.pip, #localVideo.full, #remoteVideo.pip, #remoteVideo.full { transform: scaleX(-1) !important; } #localVideo.pip, #remoteVideo.pip { position: absolute; bottom: 20px; right: 20px; width: 120px !important; height: 160px !important; border-radius: 16px; border: 3px solid rgba(255,255,255,0.25); box-shadow: 0 8px 25px rgba(0,0,0,0.6); background: black; object-fit: cover; cursor: pointer; z-index: 10; } #localVideo.full, #remoteVideo.full { position: static; width: 100% !important; height: 100% !important; border-radius: 0 !important; border: none !important; box-shadow: none !important; z-index: 5; } #localVideo { transform: scaleX(-1); } .video-footer { height: 80px; background: rgba(0,0,0,0.6); backdrop-filter: blur(10px); display: flex; justify-content: center; align-items: center; gap: 24px; } .video-footer i { font-size: 1.6rem; width: 56px; height: 56px; border-radius: 50%; background: rgba(255,255,255,0.08); display: grid; place-items: center; cursor: pointer; transition: all 0.2s; } .video-footer i:hover { background: rgba(255,255,255,0.15); } .video-footer i.muted { color: #fca5a5; background: rgba(239,68,68,0.18); } .video-footer .end-call { background: var(--danger); } .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.75); display: none; place-items: center; z-index: 200; backdrop-filter: blur(4px); } .modal-box { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 28px; width: 90%; max-width: 360px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.5); } .modal-box button { margin: 8px 0; } #actionToast { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); background: rgba(30,41,59,0.92); color: white; padding: 12px 24px; border-radius: 999px; font-size: 0.95rem; z-index: 300; opacity: 0; pointer-events: none; transition: opacity 0.4s, transform 0.4s; backdrop-filter: blur(10px); } .net-pill { background: rgba(30,41,59,0.85); padding: 5px 12px; border-radius: 999px; font-size: 0.85rem; font-weight: 600; display: none; align-items: center; backdrop-filter: blur(10px); color: #34d399; border: 1px solid #0f9d6e; } .video-header .net-pill { margin-left: auto; align-self: center; } #filePreviewModal .preview-img { max-width: 100%; max-height: 200px; margin-bottom: 12px; border-radius: 8px; } #filePreviewModal .caption-input { width: 100%; padding: 10px; margin-bottom: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); } #filePreviewModal .view-once-checkbox { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; font-size: 0.95rem; } .msg-action { position: absolute; top: 50%; transform: translateY(-50%); left: -80px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 7px 12px; font-size: 0.9rem; color: var(--danger); cursor: pointer; z-index: 10; display: none; white-space: nowrap; user-select: none; box-shadow: 0 2px 8px rgba(0,0,0,0.3); opacity: 0; transition: opacity 0.2s ease, transform 0.2s ease; } .msg.me:hover .msg-action, .msg.me.long-press .msg-action, .msg.me.clicked .msg-action { display: block; opacity: 1; transform: translateY(-50%) translateX(5px); } @media (max-width: 500px) { .msg-action { left: -70px; font-size: 0.82rem; padding: 5px 10px; } } .card:not(.hidden) { opacity: 1; transform: translateY(0); } .hidden { display: none !important; } @media (max-width: 500px) { .video-header .net-pill { padding: 4px 10px; font-size: 0.78rem; } #localVideo.pip, #remoteVideo.pip { width: 100px !important; height: 133px !important; bottom: 16px; right: 16px; } } </style>
+<style> :root { --bg: #0d1117; --surface: #161b22; --surface-2: #1f2937; --accent: #10b981; --accent-dark:#059669; --danger: #ef4444; --warning: #f59e0b; --success: #10b981; --text: #e2e8f0; --text-sec: #94a3b8; --border: #30363d; --me: #065f46; --other: #1e293b; } * { margin: 0; padding: 0; box-sizing: border-box; } html, body { height: 100%; font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; background: var(--bg); color: var(--text); overflow: hidden; } .screen { height: 100dvh; display: grid; place-items: center; padding: 16px; } .card { width: 100%; max-width: 420px; background: var(--surface); border-radius: 20px; border: 1px solid var(--border); padding: 28px 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.4); } .logo-big { font-size: 3.8rem; margin-bottom: 0.5rem; text-align: center; } h1, h2, h3 { text-align: center; } h1 { font-size: 1.75rem; font-weight: 700; margin-bottom: 0.5rem; } h2 { margin-bottom: 1.5rem; } .subtitle { color: var(--text-sec); text-align: center; font-size: 0.95rem; margin-bottom: 1.8rem; } input, select, button { width: 100%; padding: 14px 16px; margin-bottom: 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2); color: white; font-size: 1rem; } input::placeholder, select option:disabled { color: #64748b; } button { background: var(--accent); color: white; font-weight: 600; border: none; cursor: pointer; transition: all 0.2s; } button:hover { background: var(--accent-dark); transform: translateY(-1px); } button:active { transform: translateY(0); } .btn-danger { background: var(--danger); } .btn-danger:hover { background: #dc2626; } .view-once-wrapper, .normal-image-wrapper { cursor: pointer; } .normal-image-wrapper img { transition: transform 0.2s; } .normal-image-wrapper:hover img { transform: scale(1.03); } .view-once-wrapper { position: relative; cursor: pointer; user-select: none; border-radius: 12px; overflow: hidden; background: #0f172a; aspect-ratio: 3/4; max-width: 260px; margin: 4px 0; } .view-once-blur { position: absolute; inset: 0; background: rgba(15,23,42,0.92); backdrop-filter: blur(10px); display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; font-size: 1.4rem; gap: 8px; z-index: 2; transition: opacity 0.3s; } .view-once-blur.hidden { opacity: 0; pointer-events: none; } .view-once-icon { font-size: 2.8rem; color: var(--text-sec); } .view-once-text { font-size: 0.9rem; opacity: 0.9; text-align: center; max-width: 80%; } #viewOnceModal { position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 400; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 16px; } .vo-header { width: 100%; max-width: 420px; color: white; font-size: 1.1rem; font-weight: 600; padding: 12px 16px; background: rgba(30,41,59,0.6); border-radius: 12px 12px 0 0; text-align: center; backdrop-filter: blur(8px); } .vo-content { position: relative; max-width: 90vw; max-height: 70vh; border-radius: 0 0 12px 12px; overflow: hidden; background: #000; } .vo-img { max-width: 100%; max-height: 70vh; object-fit: contain; display: block; } .vo-close-btn { position: absolute; bottom: 20px; max-width: 90vw; left: 50%; transform: translateX(-50%); background: #161b22; color: white; border: none; padding: 12px 28px; font-size: 1rem; font-weight: 500; cursor: pointer; backdrop-filter: blur(6px); box-shadow: 0 4px 15px rgba(0,0,0,0.5); } .vo-close-btn:hover { background: #161b22; } .screen { height: 100dvh; display: flex; justify-content: center; align-items: center; padding: 16px; } .searching-container { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.8rem; text-align: center; max-width: 320px; width: 100%; } .searching-text { font-size: 1.25rem; font-weight: 500; opacity: 0.95; color: var(--text); } .searching-subtext { font-size: 0.95rem; color: var(--text-sec); line-height: 1.4; margin-top: 0.5rem; } #searching { opacity: 0; transition: opacity 0.4s ease; } #searching[style*="display: flex"], #searching[style*="display:block"] { opacity: 1; } .loader { width: 48px; height: 48px; border: 5px solid #2d3748; border-top: 5px solid var(--accent); border-radius: 50%; animation: spin 1s linear infinite; } @keyframes spin { to { transform: rotate(360deg); } } #chat { display: none; flex-direction: column; height: 100dvh; } .header { height: 64px; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 16px; font-weight: 500; } .partner-info { line-height: 1.3; } .partner-name { font-size: 1.1rem; font-weight: 600; } .partner-status { font-size: 0.82rem; opacity: 0.8; } .status-online { color: #34d399; } .status-offline { color: #f87171; } .status-typing { color: #fbbf24; font-style: italic; } .encryption-info { display: flex; align-items: center; justify-content: center; background: var(--surface-2); padding: 6px 12px; border-bottom: 1px solid var(--border); font-size: 0.85rem; color: var(--text-sec); gap: 6px; } .encryption-info i { font-size: 1rem; color: var(--success); } #messages { flex: 1; padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; } .msg { max-width: 78%; display: flex; flex-direction: column; position: relative; user-select: none; } .me { align-self: flex-end; } .other { align-self: flex-start; } .bubble { padding: 10px 14px; border-radius: 18px; font-size: 0.96rem; line-height: 1.4; word-break: break-word; } .me .bubble { background: var(--me); border-bottom-right-radius: 4px; } .other .bubble { background: var(--other); border-bottom-left-radius: 4px; } .time { font-size: 0.68rem; opacity: 0.6; margin-top: 3px; align-self: flex-end; } .file-preview { max-width: 100%; max-height: 200px; border-radius: 8px; } .view-once { opacity: 0.7; font-style: italic; } .deleted-msg { font-style: italic; color: var(--text-sec); } .footer { padding: 12px 16px; background: var(--surface); border-top: 1px solid var(--border); display: flex; gap: 10px; } .footer input { flex: 1; border-radius: 999px; padding: 12px 20px; border: none; } .footer button { background:#10b981;width: 48px; height: 48px; border-radius: 50%; font-size: 1.4rem; display: grid; place-items: center; padding: 0; } .video-wrap { position: fixed; inset: 0; background: black; display: none; flex-direction: column; z-index: 100; } .video-header { height: 56px; background: rgba(0,0,0,0.6); color: white; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; font-size: 1.05rem; backdrop-filter: blur(10px); } .video-body { flex: 1; position: relative; background: #000; } video { transform: scaleX(-1) !important; } video { width: 100%; height: 100%; object-fit: cover; transition: all 0.4s ease; } video#localVideo, video#remoteVideo, #localVideo.pip, #localVideo.full, #remoteVideo.pip, #remoteVideo.full { transform: scaleX(-1) !important; } #localVideo.pip, #remoteVideo.pip { position: absolute; bottom: 20px; right: 20px; width: 120px !important; height: 160px !important; border-radius: 16px; border: 3px solid rgba(255,255,255,0.25); box-shadow: 0 8px 25px rgba(0,0,0,0.6); background: black; object-fit: cover; cursor: pointer; z-index: 10; } #localVideo.full, #remoteVideo.full { position: static; width: 100% !important; height: 100% !important; border-radius: 0 !important; border: none !important; box-shadow: none !important; z-index: 5; } #localVideo { transform: scaleX(-1); } video.pip-normal { width: 120px !important; height: 160px !important; bottom: 20px !important; right: 20px !important; border-radius: 16px; border: 3px solid rgba(255,255,255,0.25); box-shadow: 0 8px 25px rgba(0,0,0,0.6); } video.pip-mini { width: 96px !important; height: 128px !important; bottom: 100px !important; right: 16px !important; border: 2px solid #10b981; border-radius: 14px; box-shadow: 0 4px 20px rgba(0,0,0,0.6); } #localVideo.pip, #remoteVideo.pip { position: absolute; background: black; object-fit: cover; cursor: pointer; z-index: 10; } #videoCallBtn.disabled { opacity: 0.4; cursor: not-allowed; pointer-events: none; } #videoCallBtn { transition: opacity 0.2s; } .media-status-overlay { position: absolute; top: 12px; left: 12px; background: rgba(0,0,0,0.65); color: #fbbf24; width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; z-index: 15; backdrop-filter: blur(4px); border: 2px solid rgba(251,191,36,0.5); transition: opacity 0.4s ease, transform 0.3s ease; } .media-status-overlay.hidden { opacity: 0; transform: scale(0.85); pointer-events: none; } #remoteVideo.pip ~ #micStatusRemote, #localVideo.pip ~ #micStatusLocal { width: 32px; height: 32px; font-size: 1.1rem; top: 6px; left: 6px; border-width: 1.5px; } .video-footer { height: 80px; background: rgba(0,0,0,0.6); backdrop-filter: blur(10px); display: flex; justify-content: center; align-items: center; gap: 24px; } .video-footer i { font-size: 1.6rem; width: 56px; height: 56px; border-radius: 50%; background: rgba(255,255,255,0.08); display: grid; place-items: center; cursor: pointer; transition: all 0.2s; } .video-footer i:hover { background: rgba(255,255,255,0.15); } .video-footer i.muted { color: #fca5a5; background: rgba(239,68,68,0.18); } .video-footer .end-call { background: var(--danger); } .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.75); display: none; place-items: center; z-index: 200; backdrop-filter: blur(4px); } .modal-box { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 28px; width: 90%; max-width: 360px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.5); } .modal-box button { margin: 8px 0; } #actionToast { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); background: rgba(30,41,59,0.92); color: white; padding: 12px 24px; border-radius: 999px; font-size: 0.95rem; z-index: 300; opacity: 0; pointer-events: none; transition: opacity 0.4s, transform 0.4s; backdrop-filter: blur(10px); } .net-pill { background: rgba(30,41,59,0.85); padding: 5px 12px; border-radius: 999px; font-size: 0.85rem; font-weight: 600; display: none; align-items: center; backdrop-filter: blur(10px); color: #34d399; border: 1px solid #0f9d6e; } .video-header .net-pill { margin-left: auto; align-self: center; } #filePreviewModal .preview-img { max-width: 100%; max-height: 200px; margin-bottom: 12px; border-radius: 8px; } #filePreviewModal .caption-input { width: 100%; padding: 10px; margin-bottom: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); } #filePreviewModal .view-once-checkbox { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; font-size: 0.95rem; } .msg-action { position: absolute; top: 50%; transform: translateY(-50%); left: -80px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 7px 12px; font-size: 0.9rem; color: var(--danger); cursor: pointer; z-index: 10; display: none; white-space: nowrap; user-select: none; box-shadow: 0 2px 8px rgba(0,0,0,0.3); opacity: 0; transition: opacity 0.2s ease, transform 0.2s ease; } .msg.me:hover .msg-action, .msg.me.long-press .msg-action, .msg.me.clicked .msg-action { display: block; opacity: 1; transform: translateY(-50%) translateX(5px); } @media (max-width: 500px) { .msg-action { left: -70px; font-size: 0.82rem; padding: 5px 10px; } } .card:not(.hidden) { opacity: 1; transform: translateY(0); } .hidden { display: none !important; } @media (max-width: 500px) { .video-header .net-pill { padding: 4px 10px; font-size: 0.78rem; } #localVideo.pip, #remoteVideo.pip { width: 100px !important; height: 133px !important; bottom: 16px; right: 16px; } } </style>
 </head>
 <body>
-<style>
-/* PIP normal di dalam video call (ukuran sedang) */
-video.pip-normal {
-  width: 120px  !important;
-  height: 160px !important;
-  bottom: 20px  !important;
-  right: 20px   !important;
-  border-radius: 16px;
-  border: 3px solid rgba(255,255,255,0.25);
-  box-shadow: 0 8px 25px rgba(0,0,0,0.6);
-}
 
-/* PIP super kecil saat diminimalkan ke chat */
-video.pip-mini {
-  width: 96px   !important;
-  height: 128px !important;
-  bottom: 100px !important;   /* atau sesuaikan */
-  right: 16px   !important;
-  border: 2px solid #10b981;
-  border-radius: 14px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.6);
-}
-
-/* Override yang sudah ada supaya lebih jelas */
-#localVideo.pip, #remoteVideo.pip {
-  position: absolute;
-  background: black;
-  object-fit: cover;
-  cursor: pointer;
-  z-index: 10;
-}
-
-#videoCallBtn.disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-  pointer-events: none;     /* blokir klik sama sekali */
-}
-
-#videoCallBtn {
-  transition: opacity 0.2s;
-}
-
-.media-status-overlay {
-  position: absolute;
-  top: 12px;
-  left: 12px;
-  background: rgba(0,0,0,0.65);
-  color: #fbbf24;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.5rem;
-  z-index: 15;
-  backdrop-filter: blur(4px);
-  border: 2px solid rgba(251,191,36,0.5);
-  transition: opacity 0.4s ease, transform 0.3s ease;
-}
-
-.media-status-overlay.hidden {
-  opacity: 0;
-  transform: scale(0.85);
-  pointer-events: none;
-}
-
-/* Saat video di mode PIP (kecil) */
-#remoteVideo.pip ~ #micStatusRemote,
-#localVideo.pip ~ #micStatusLocal {
-  width: 32px;
-  height: 32px;
-  font-size: 1.1rem;
-  top: 6px;
-  left: 6px;
-  border-width: 1.5px;
-}
-</style>
 <div class="screen" id="loginScreen">
   <div id="welcomeContent">
     <div class="logo-big">💬</div>
@@ -98,8 +21,8 @@ video.pip-mini {
   </div>
 
   <div class="card hidden" id="loginForm">
-    <h2>Sanz project</h2>
-
+    <h1>Sanz project</h1>
+  <div class="subtitle">Masuk untuk memulai percakapan anonim</div>
     <input id="name" placeholder="Nama (opsional)" autocomplete="off"/>
     
     <div style="display:flex; justify-content:space-between; align-items:center; margin:8px 0 4px; font-weight:500; color:var(--text-sec)">
@@ -128,13 +51,13 @@ video.pip-mini {
       <option value="server3">Server 3</option>
     </select>
 
-    <button onclick="start()">Masuk Chat</button>
+    <button onclick="start()" style="margin-top: 10px;">Masuk Chat</button>
   </div>
 </div>
 
 <div class="screen" id="searching" style="display:none; flex-direction:column; gap:1.5rem;">
   <div class="loader"></div>
-  <div style="font-size:1.1rem; opacity:0.9">Mencari temen ngobrol...</div>
+  <div style="font-size:1.1rem; opacity:0.9">Mencari partner...</div>
 </div>
 
 <div id="chat">
@@ -162,7 +85,9 @@ video.pip-mini {
     <input id="msg" placeholder="Ketik pesan..." autocomplete="off" onkeydown="if(event.key==='Enter')sendMessage()"/>
     <button onclick="document.getElementById('fileInput').click()"><i class="bi bi-paperclip"></i></button>
     <input type="file" id="fileInput" style="display:none;" onchange="previewFile()"/>
-    <button onclick="sendMessage()">➤</button>
+    <button onclick="sendMessage()">
+     <i class="bi bi-send-fill"></i>
+    </button>
   </div>
 </div>
 
@@ -175,12 +100,10 @@ video.pip-mini {
   </div>
 
 <div class="video-body">
-  <!-- Icon mute untuk remote video (wajah partner) -->
   <div id="micStatusRemote" class="media-status-overlay hidden mic" title="Mikrofon partner dimatikan">
     <i class="bi bi-mic-mute-fill"></i>
   </div>
 
-  <!-- Icon mute untuk local video (wajah kamu sendiri) -->
   <div id="micStatusLocal" class="media-status-overlay hidden mic" title="Mikrofon kamu dimatikan">
     <i class="bi bi-mic-mute-fill"></i>
   </div>
@@ -194,7 +117,6 @@ video.pip-mini {
   <i id="camBtn"   class="bi bi-camera-video-fill" onclick="toggleCam()"></i>
   <i class="bi bi-arrow-repeat" onclick="switchCamera()"></i>
   
-  <!-- Tombol minimize baru -->
   <i class="bi bi-box-arrow-down-right" 
      id="minimizeCallBtn"
      onclick="minimizeToPartnerView()"
@@ -235,8 +157,6 @@ video.pip-mini {
     background: black;
     object-fit: cover;
   "></video>
-  <div style="position:absolute; top:4px; right:4px; background:rgba(0,0,0,0.6); color:white; font-size:10px; padding:2px 6px; border-radius:10px;">
-    Partner
   </div>
 </div>
 
@@ -323,7 +243,7 @@ let messagesMap = {};
 let myMicEnabled = true;
 let myCamEnabled = true;
 let partnerMicEnabled = true; 
-let isInVideoCall = false;          // true = sedang video call (full atau minimized)
+let isInVideoCall = false;        
 
 const ice = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
 
@@ -344,20 +264,14 @@ socket.on('message-confirmed', ({ id }) => {
   }
 });
 
-// Tambahkan di bagian atas script (global)
-
-
-// Fungsi baru untuk update icon mute
 function updateMicIcons() {
   const isMyMicMuted = !myMicEnabled;
 
-  // Icon di local video (wajah kamu) hanya muncul jika kamu yang mute
   const localOverlay = document.getElementById("micStatusLocal");
   localOverlay?.classList.toggle("hidden", !isMyMicMuted);
 
-  // Icon di remote video (wajah partner) hanya muncul jika partner mute
   const remoteOverlay = document.getElementById("micStatusRemote");
-  remoteOverlay?.classList.toggle("hidden", partnerMicEnabled);  // partnerMicEnabled = true berarti partner tidak mute
+  remoteOverlay?.classList.toggle("hidden", partnerMicEnabled); 
 }
 
 let isMinimizedToPartner = false;
@@ -370,23 +284,20 @@ function minimizeToPartnerView() {
 
   isMinimizedToPartner = true;
 
-  // Sembunyikan layar video call full
   document.getElementById("videoScreen").style.display = "none";
 
-  // Gunakan video mini khusus (bukan video PIP biasa)
   const miniContainer = document.getElementById("miniRemoteVideoContainer");
   const miniVideo = document.getElementById("miniRemoteVideo");
 
   miniVideo.srcObject = document.getElementById("remoteVideo").srcObject;
-  miniVideo.className = "pip-mini";   // pakai class mini
+  miniVideo.className = "pip-mini";   
   miniVideo.play().catch(e => console.log("Mini remote play error:", e));
 
   miniContainer.style.display = "block";
 
-  showToast("Mode mini • partner tetap terlihat • chat dibuka");
+  showToast("Mode chat aktif");
 }
 
-// Klik mini → kembali ke full video call
 document.getElementById("miniRemoteVideoContainer")?.addEventListener("click", function() {
   if (!isMinimizedToPartner) return;
 
@@ -394,20 +305,14 @@ document.getElementById("miniRemoteVideoContainer")?.addEventListener("click", f
   document.getElementById("miniRemoteVideoContainer").style.display = "none";
   document.getElementById("videoScreen").style.display = "flex";
 
-  // Kembalikan srcObject
   const remoteVideo = document.getElementById("remoteVideo");
   remoteVideo.srcObject = document.getElementById("miniRemoteVideo").srcObject;
 
-  // Pastikan class PIP kembali ke ukuran normal
   if (remoteVideo.classList.contains("pip")) {
     remoteVideo.classList.remove("pip-mini");
-    remoteVideo.classList.add("pip-normal");   // atau langsung pakai .pip + CSS
+    remoteVideo.classList.add("pip-normal");   
   }
-
-  // Reset layout kalau perlu
   resetVideoLayout();
-
-  showToast("Kembali ke mode video penuh");
 });
 
 let isVideoMinimized = false;
@@ -417,10 +322,8 @@ function minimizeVideoCall() {
 
   isVideoMinimized = true;
 
-  // Sembunyikan layar video call full
   document.getElementById("videoScreen").style.display = "none";
 
-  // Tampilkan mini video (wajah kamu sendiri)
   const miniContainer = document.getElementById("miniLocalVideoContainer");
   const miniVideo     = document.getElementById("miniLocalVideo");
 
@@ -428,9 +331,6 @@ function minimizeVideoCall() {
   miniVideo.play().catch(e => console.log("Mini play error:", e));
 
   miniContainer.style.display = "block";
-
-  // Optional: beri tahu partner kalau kamu minimize (bisa skip)
-  // socket.emit("video-minimized", true);
 
   showToast("Video call diminimalkan • chat dibuka kembali");
 }
@@ -440,26 +340,20 @@ function updateVideoCallButton() {
   if (!btn) return;
 
   if (isInVideoCall) {
-    // Sedang video call → disable
     btn.style.opacity = "0.4";
     btn.style.cursor = "not-allowed";
     btn.title = "Sedang dalam panggilan video";
     
-    // Cara 1: hapus event listener (paling aman)
     btn.onclick = null;
     
-    // Cara 2 (alternatif): tambah class disabled kalau mau style lebih kustom
-    // btn.classList.add("disabled");
   } else {
-    // Tidak sedang call → enable normal
+
     btn.style.opacity = "1";
     btn.style.cursor = "pointer";
     btn.title = "Mulai video call";
     
-    // Kembalikan fungsi klik
     btn.onclick = callUser;
     
-    // btn.classList.remove("disabled");
   }
 }
 
@@ -471,13 +365,11 @@ function restoreVideoCall() {
   document.getElementById("miniLocalVideoContainer").style.display = "none";
   document.getElementById("videoScreen").style.display = "flex";
 
-  // Kembalikan srcObject ke localVideo asli
   document.getElementById("localVideo").srcObject = localStream;
 
   showToast("Kembali ke mode video penuh");
 }
 
-// Bonus: klik mini video → kembali ke full
 document.getElementById("miniLocalVideoContainer")?.addEventListener("click", restoreVideoCall);
 
 document.getElementById("localVideo").onclick = function() {
@@ -504,10 +396,9 @@ document.getElementById("localVideo").onclick = function() {
   local.style.zIndex  = isPipSwapped ? "5"  : "10";
   remote.style.zIndex = isPipSwapped ? "10" : "5";
 
-  // Update posisi icon setelah swap
   updateMicIcons();
 };
-// Panggil fungsi ini setiap kali status berubah atau PIP swap
+
 let pendingDeleteMsgId = null;
 let pendingDeleteBubble = null;
 let pendingDeleteAction = null;
@@ -587,11 +478,6 @@ function start() {
   const gender = document.getElementById("gender").value;
   const job    = document.getElementById("job").value;
   const server = document.getElementById("server").value;
-
-  if (!gender || !job) {
-    showAlert("Isi data singkat untuk mulai");
-    return;
-  }
 
   window.userData = { name, age, gender, job, server };
   socket.emit("join", { name, age, gender, job, server });
@@ -923,9 +809,9 @@ socket.on("matched", p => {
   document.getElementById("refreshBtn").style.display = "none";
   document.getElementById("videoCallBtn").style.display = "block";
 isInVideoCall = false;
-  updateVideoCallButton();          // pastikan tombol aktif
+  updateVideoCallButton();          
   
-  document.getElementById("videoCallBtn").style.display = "block";  // kalau pakai display none awalnya
+  document.getElementById("videoCallBtn").style.display = "block";  
 });
 
 socket.on("message", data => {
@@ -958,7 +844,7 @@ socket.on("partner-left", () => {
 
 async function startMedia() {
   try {
-    // Minta akses media baru (kamera + mikrofon)
+
     localStream = await navigator.mediaDevices.getUserMedia({
       video: {
         facingMode: "user",
@@ -969,20 +855,17 @@ async function startMedia() {
       audio: true
     });
 
-    // Ambil track video dan audio dari stream baru
     const videoTrack = localStream.getVideoTracks()[0];
     const audioTrack = localStream.getAudioTracks()[0];
 
-    // Terapkan status mute terakhir ke track-track tersebut
     if (videoTrack) {
-      videoTrack.enabled = myCamEnabled;  // gunakan status cam terakhir
+      videoTrack.enabled = myCamEnabled;  
     }
 
     if (audioTrack) {
-      audioTrack.enabled = myMicEnabled;  // gunakan status mic terakhir
+      audioTrack.enabled = myMicEnabled;
     }
 
-    // Update tampilan tombol footer sesuai status yang sudah diterapkan
     document.getElementById("camBtn").className = 
       (videoTrack && videoTrack.enabled) 
         ? "bi bi-camera-video-fill" 
@@ -993,12 +876,10 @@ async function startMedia() {
         ? "bi bi-mic-fill" 
         : "bi bi-mic-mute-fill muted";
 
-    // Pasang stream ke video lokal
     const localVideo = document.getElementById("localVideo");
     localVideo.srcObject = localStream;
     localVideo.play().catch(e => console.log("Play error:", e));
 
-    // Optional: kirim status terkini ke partner (agar icon mute di sisi partner sinkron)
     socket.emit("media-status", { 
       mic: myMicEnabled,
       cam: myCamEnabled 
@@ -1188,11 +1069,10 @@ function checkSignal() {
 
 async function callUser() {
   if (!partner) {
-    showAlert("Belum ada partner yang terhubung!");
+    showAlert("Belum ada yang terhubung!");
     return;
   }
 
-  // Set status call aktif → disable tombol
   isInVideoCall = true;
   updateVideoCallButton();
 
@@ -1299,18 +1179,15 @@ function resetVideoLayout() {
 
   isPipSwapped = false;
 
-  // Reset class dulu
-  local.className  = "pip pip-normal";   // atau hanya "pip" kalau CSS #localVideo.pip sudah benar
+  local.className  = "pip pip-normal";
   remote.className = "full";
 
   local.style.zIndex = "10";
   remote.style.zIndex = "5";
 
-  // Pastikan tidak ada sisa class mini
   local.classList.remove("pip-mini");
   remote.classList.remove("pip-mini");
 
-  // Mirror local kalau kamera depan
   local.style.transform  = isFront ? "scaleX(-1)" : "none";
   remote.style.transform = "none";
 }
@@ -1373,54 +1250,46 @@ socket.on("call-rejected", () => {
 
 socket.on("media-status", (status) => {
   if (status.mic !== undefined) {
-    partnerMicEnabled = status.mic;  // true = partner tidak mute, false = partner mute
+    partnerMicEnabled = status.mic;  
     updateMicIcons();
   }
 });
 
 function endCall() {
-  // Tutup peer connection jika ada
+
   if (pc) {
     pc.close();
     pc = null;
   }
 
-  // Stop semua track media lokal (kamera & mic)
   if (localStream) {
     localStream.getTracks().forEach(track => track.stop());
     localStream = null;
   }
 
-  // Sembunyikan layar video call & status network
   const videoScreen = document.getElementById("videoScreen");
   if (videoScreen) videoScreen.style.display = "none";
 
   const netStatus = document.getElementById("netStatus");
   if (netStatus) netStatus.style.display = "none";
 
-  // Beritahu server bahwa call diakhiri
   socket.emit("end-call");
 
-  // Reset flag-flag status
   isPipSwapped = false;
   isVideoMinimized = false;
   isMinimizedToPartner = false;
-  isInVideoCall = false;                  // Penting: reset status call agar tombol bisa aktif lagi
-
-  // Sembunyikan mini remote container kalau sedang muncul
+  isInVideoCall = false;              
+  
   const miniContainer = document.getElementById("miniRemoteVideoContainer");
   if (miniContainer) {
     miniContainer.style.display = "none";
   }
 
-  // Kosongkan srcObject mini video agar tidak memory leak
   const miniVideo = document.getElementById("miniRemoteVideo");
   if (miniVideo) {
     miniVideo.srcObject = null;
   }
 
-  // Jaga status mute & cam tetap seperti terakhir (tidak reset ke true)
-  // Update icon tombol mic & cam di footer sesuai status terakhir
   const micBtn = document.getElementById("micBtn");
   if (micBtn) {
     micBtn.className = myMicEnabled 
@@ -1430,23 +1299,20 @@ function endCall() {
 
   const camBtn = document.getElementById("camBtn");
   if (camBtn) {
-    // Karena localStream sudah di-stop, kita pakai status boolean terakhir saja
+
     camBtn.className = myCamEnabled 
       ? "bi bi-camera-video-fill" 
       : "bi bi-camera-video-off-fill muted";
   }
 
-  // Sembunyikan overlay mute (kalau ada)
   const remoteMicOverlay = document.getElementById("micStatusRemote");
   if (remoteMicOverlay) remoteMicOverlay.classList.add("hidden");
 
   const localMicOverlay = document.getElementById("micStatusLocal");
   if (localMicOverlay) localMicOverlay.classList.add("hidden");
 
-  // Enable kembali tombol video call di header
   updateVideoCallButton();
 
-  // Optional: beri feedback ke user
   showToast("Panggilan video diakhiri");
 }
 
@@ -1566,7 +1432,6 @@ function toggleMic() {
 
   socket.emit("media-status", { mic: myMicEnabled });
 
-  // Update icon di layar sendiri & partner
   updateMicIcons();
 }
 
@@ -1584,11 +1449,15 @@ function toggleCam() {
 
 function openProfile() {
   if (!partner) return;
+
+  const genderText = partner.gender && partner.gender !== "-" ? partner.gender : "Tidak disebutkan";
+  const jobText    = partner.job    && partner.job    !== "-" ? partner.job    : "Tidak disebutkan";
+
   document.getElementById("profileContent").innerHTML = `
     <div><b>Nama:</b> ${partner.name}</div>
     <div><b>Umur:</b> ${partner.age}</div>
-    <div><b>Gender:</b> ${partner.gender || "?"}</div>
-    <div><b>Status:</b> ${partner.job || "-"}</div>
+    <div><b>Gender:</b> ${genderText}</div>
+    <div><b>Status:</b> ${jobText}</div>
     <div><b>Server:</b> ${partner.server}</div>
   `;
   document.getElementById("profileModal").style.display = "grid";
