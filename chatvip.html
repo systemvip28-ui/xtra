@@ -17,7 +17,7 @@
   top: 12px;
   left: 12px;
   background: rgba(0,0,0,0.65);
-  color: #fbbf24;           /* kuning untuk mic */
+  color: #fbbf24;
   width: 44px;
   height: 44px;
   border-radius: 50%;
@@ -31,23 +31,21 @@
   transition: opacity 0.4s ease, transform 0.3s ease;
 }
 
-#remoteVideo.pip ~ #remoteMicStatus {
-  width: 32px;
-  height: 32px;
-  font-size: 1.1rem;
-  top: 6px;
-  left: 6px;
-  border-width: 1.5px;
-}
-
 .media-status-overlay.hidden {
   opacity: 0;
   transform: scale(0.85);
   pointer-events: none;
 }
 
-#remoteMicStatus {
-  z-index: 12;   /* cukup tinggi agar terlihat di atas video */
+/* Saat video di mode PIP (kecil) */
+#remoteVideo.pip ~ #micStatusRemote,
+#localVideo.pip ~ #micStatusLocal {
+  width: 32px;
+  height: 32px;
+  font-size: 1.1rem;
+  top: 6px;
+  left: 6px;
+  border-width: 1.5px;
 }
 </style>
 <div class="screen" id="loginScreen">
@@ -136,10 +134,15 @@
   </div>
 
 <div class="video-body">
-  <!-- Hanya icon mic mute untuk remote (yang dilihat partner) -->
-<div id="remoteMicStatus" class="media-status-overlay hidden mic" title="Mikrofon dimatikan">
-  <i class="bi bi-mic-mute-fill"></i>
-</div>
+  <!-- Icon mute untuk remote video (wajah partner) -->
+  <div id="micStatusRemote" class="media-status-overlay hidden mic" title="Mikrofon partner dimatikan">
+    <i class="bi bi-mic-mute-fill"></i>
+  </div>
+
+  <!-- Icon mute untuk local video (wajah kamu sendiri) -->
+  <div id="micStatusLocal" class="media-status-overlay hidden mic" title="Mikrofon kamu dimatikan">
+    <i class="bi bi-mic-mute-fill"></i>
+  </div>
 
   <video id="remoteVideo" autoplay playsinline class="full"></video>
   <video id="localVideo" autoplay muted playsinline class="pip"></video>
@@ -254,6 +257,7 @@ let selectedFile = null;
 let messageIdCounter = 0; 
 let messagesMap = {}; 
 let myMicEnabled = true;
+let myCamEnabled = true;
 let partnerMicEnabled = true; 
 
 const ice = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
@@ -275,6 +279,50 @@ socket.on('message-confirmed', ({ id }) => {
   }
 });
 
+// Tambahkan di bagian atas script (global)
+
+
+// Fungsi baru untuk update icon mute
+function updateMicIcons() {
+  const isMyMicMuted = !myMicEnabled;
+
+  // Icon di local video (wajah kamu) hanya muncul jika kamu yang mute
+  const localOverlay = document.getElementById("micStatusLocal");
+  localOverlay?.classList.toggle("hidden", !isMyMicMuted);
+
+  // Icon di remote video (wajah partner) hanya muncul jika partner mute
+  const remoteOverlay = document.getElementById("micStatusRemote");
+  remoteOverlay?.classList.toggle("hidden", partnerMicEnabled);  // partnerMicEnabled = true berarti partner tidak mute
+}
+
+document.getElementById("localVideo").onclick = function() {
+  const local  = document.getElementById("localVideo");
+  const remote = document.getElementById("remoteVideo");
+
+  isPipSwapped = !isPipSwapped;
+
+  if (isPipSwapped) {
+    local.classList.remove("pip");
+    local.classList.add("full");
+    remote.classList.remove("full");
+    remote.classList.add("pip");
+  } else {
+    local.classList.remove("full");
+    local.classList.add("pip");
+    remote.classList.remove("pip");
+    remote.classList.add("full");
+
+    local.style.transform  = isFront ? "scaleX(-1)" : "none";
+    remote.style.transform = "none";
+  }
+
+  local.style.zIndex  = isPipSwapped ? "5"  : "10";
+  remote.style.zIndex = isPipSwapped ? "10" : "5";
+
+  // Update posisi icon setelah swap
+  updateMicIcons();
+};
+// Panggil fungsi ini setiap kali status berubah atau PIP swap
 let pendingDeleteMsgId = null;
 let pendingDeleteBubble = null;
 let pendingDeleteAction = null;
@@ -721,24 +769,58 @@ socket.on("partner-left", () => {
 
 async function startMedia() {
   try {
+    // Minta akses media baru (kamera + mikrofon)
     localStream = await navigator.mediaDevices.getUserMedia({
       video: {
         facingMode: "user",
-        width: { ideal: 640 },          
-        height: { ideal: 480 },       
-        aspectRatio: { ideal: 4/3 }     
+        width: { ideal: 640 },
+        height: { ideal: 480 },
+        aspectRatio: { ideal: 4/3 }
       },
       audio: true
     });
+
+    // Ambil track video dan audio dari stream baru
+    const videoTrack = localStream.getVideoTracks()[0];
+    const audioTrack = localStream.getAudioTracks()[0];
+
+    // Terapkan status mute terakhir ke track-track tersebut
+    if (videoTrack) {
+      videoTrack.enabled = myCamEnabled;  // gunakan status cam terakhir
+    }
+
+    if (audioTrack) {
+      audioTrack.enabled = myMicEnabled;  // gunakan status mic terakhir
+    }
+
+    // Update tampilan tombol footer sesuai status yang sudah diterapkan
+    document.getElementById("camBtn").className = 
+      (videoTrack && videoTrack.enabled) 
+        ? "bi bi-camera-video-fill" 
+        : "bi bi-camera-video-off-fill muted";
+
+    document.getElementById("micBtn").className = 
+      myMicEnabled 
+        ? "bi bi-mic-fill" 
+        : "bi bi-mic-mute-fill muted";
+
+    // Pasang stream ke video lokal
     const localVideo = document.getElementById("localVideo");
     localVideo.srcObject = localStream;
     localVideo.play().catch(e => console.log("Play error:", e));
+
+    // Optional: kirim status terkini ke partner (agar icon mute di sisi partner sinkron)
+    socket.emit("media-status", { 
+      mic: myMicEnabled,
+      cam: myCamEnabled 
+    });
+
+    return true;
   } catch (err) {
     console.error("getUserMedia gagal:", err);
     showAlert("Tidak bisa akses kamera/mikrofon: " + err.message);
     return false;
   }
-  return true;
 }
 
 function createPeer() {
@@ -1088,13 +1170,9 @@ socket.on("call-rejected", () => {
 
 socket.on("media-status", (status) => {
   if (status.mic !== undefined) {
-    partnerMicEnabled = status.mic;
-    const overlay = document.getElementById("remoteMicStatus");
-    if (overlay) {
-      overlay.classList.toggle("hidden", partnerMicEnabled);
-    }
+    partnerMicEnabled = status.mic;  // true = partner tidak mute, false = partner mute
+    updateMicIcons();
   }
-  // abaikan jika ada cam (karena kita tidak pakai lagi)
 });
 
 function endCall() {
@@ -1106,10 +1184,21 @@ function endCall() {
   pc = localStream = null;
   isPipSwapped = false;
 
-  myMicEnabled = true;
-  partnerMicEnabled = true;
+  // HAPUS baris ini agar status mute tidak reset
+  // myMicEnabled = true;
+  // partnerMicEnabled = true;
 
+  // Tetap sembunyikan overlay saat video call mati
   document.getElementById("remoteMicStatus")?.classList.add("hidden");
+
+  // Opsional: update tombol footer sesuai status terakhir (tidak reset)
+  document.getElementById("micBtn").className = 
+    myMicEnabled ? "bi bi-mic-fill" : "bi bi-mic-mute-fill muted";
+
+  document.getElementById("camBtn").className = 
+    localStream?.getVideoTracks()[0]?.enabled 
+      ? "bi bi-camera-video-fill" 
+      : "bi bi-camera-video-off-fill muted";
 }
 
 socket.on("end-call", endCall);
@@ -1223,30 +1312,26 @@ function toggleMic() {
   myMicEnabled = !myMicEnabled;
   tr.enabled = myMicEnabled;
 
-  // Update icon tombol footer
   document.getElementById("micBtn").className = 
     myMicEnabled ? "bi bi-mic-fill" : "bi bi-mic-mute-fill muted";
 
-  // Kirim status ke partner
   socket.emit("media-status", { mic: myMicEnabled });
 
-  // Tidak perlu update overlay lokal karena kita hapus
+  // Update icon di layar sendiri & partner
+  updateMicIcons();
 }
 
 function toggleCam() {
-  // Biarkan fungsi ini tetap ada (untuk toggle kamera), tapi tidak kirim status
   if (!localStream) return;
   const tr = localStream.getVideoTracks()[0];
   if (!tr) return;
 
-  tr.enabled = !tr.enabled;
+  myCamEnabled = !myCamEnabled;
+  tr.enabled = myCamEnabled;
 
   document.getElementById("camBtn").className = 
-    tr.enabled ? "bi bi-camera-video-fill" : "bi bi-camera-video-off-fill muted";
-
-  // Tidak kirim apa-apa ke server untuk cam
+    myCamEnabled ? "bi bi-camera-video-fill" : "bi bi-camera-video-off-fill muted";
 }
-
 
 function openProfile() {
   if (!partner) return;
