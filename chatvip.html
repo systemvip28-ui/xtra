@@ -1176,14 +1176,35 @@ async function acceptCall() {
   const hasMedia = await startMedia();
   if (!hasMedia) return;
 
-  createPeer();
+  createPeer();  // Buat peer connection baru
 
-  localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+  // Tambahkan track lokal (audio + video) ke peer connection
+  localStream.getTracks().forEach(track => {
+    pc.addTrack(track, localStream);
+    console.log("Track lokal ditambahkan ke pc:", track.kind); // untuk debug
+  });
 
+  // Yang paling penting: buat dan kirim OFFER dari penerima panggilan
+  try {
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+    socket.emit("offer", offer);
+    console.log("Offer dikirim dari penerima panggilan");
+  } catch (err) {
+    console.error("Gagal membuat offer di acceptCall:", err);
+    showAlert("Gagal memulai video call: " + err.message);
+    return;
+  }
+
+  // Tetap beri tahu server bahwa panggilan diterima
   socket.emit("accept-call");
 
-  // Tampilkan video screen
+  // Tampilkan layar video call
   document.getElementById("videoScreen").style.display = "flex";
+  document.getElementById("callName").textContent = partner?.name || "Partner";
+
+  // Optional: reset layout agar local video di PIP, remote di full
+  resetVideoLayout();
 }
 
 function rejectCall() {
