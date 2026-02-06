@@ -684,16 +684,34 @@
 </div>
 
 <div id="filePreviewModal" class="modal" style="display:none;">
-  <div class="modal-box">
-    <h3>Pratinjau File</h3>
-    <img id="previewImage" class="preview-img" style="display:none;"/>
-    <input id="captionInput" class="caption-input" placeholder="Tambahkan caption (opsional)"/>
-    <label class="view-once-checkbox">
-      <input type="checkbox" id="viewOnceCheckbox"/>
-      Kirim sebagai sekali lihat
+  <div class="modal-box" style="max-width: 400px; padding: 24px 20px;">
+    <h3 style="margin-bottom: 1.2rem;">Pratinjau File</h3>
+    
+    <!-- Preview gambar/video lebih dulu, tepat di bawah judul -->
+    <div style="text-align: center; margin-bottom: 1.5rem;">
+      <img id="previewImage" class="preview-img" style="display:none; max-height: 260px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);"/>
+      <!-- Jika nanti mau support video preview, bisa tambah <video> di sini -->
+    </div>
+
+    <!-- Caption -->
+    <input 
+      id="captionInput" 
+      class="caption-input" 
+      placeholder="Tambahkan caption (opsional)" 
+      style="margin-bottom: 1.4rem;"
+    />
+
+    <!-- Checkbox view once – lebih jelas dan terpisah -->
+    <label class="view-once-checkbox" style="display: flex; align-items: center; gap: 10px; margin-bottom: 1.8rem; cursor: pointer; user-select: none;">
+      <input type="checkbox" id="viewOnceCheckbox" style="width: 18px; height: 18px; accent-color: var(--accent);"/>
+      <span style="font-size: 0.97rem; color: var(--text);">Kirim sebagai pesan sekali lihat (view once)</span>
     </label>
-    <button onclick="sendFile()">Kirim</button>
-    <button class="btn-danger" onclick="cancelFilePreview()">Batal</button>
+
+    <!-- Tombol aksi -->
+    <div style="display: flex; gap: 12px; margin-top: 0.8rem;">
+      <button onclick="sendFile()" style="flex: 1;">Kirim</button>
+      <button class="btn-danger" onclick="cancelFilePreview()" style="flex: 1;">Batal</button>
+    </div>
   </div>
 </div>
 
@@ -750,7 +768,7 @@ function start() {
   const server = document.getElementById("server").value;
 
   if (!gender || !job) {
-    showAlert("Gender dan Status wajib diisi!");
+    showAlert("Isi data singkat untuk mulai");
     return;
   }
 
@@ -765,21 +783,29 @@ function start() {
 function addMsg(data, side, time = timeNow()) {
   const div = document.createElement("div");
   div.className = `msg ${side}`;
-  div.dataset.msgId = data.id; // Simpan ID pesan
-  messagesMap[data.id] = div;
+
+  // Simpan ID kalau ada (dari server)
+  if (data.id) {
+    div.dataset.msgId = data.id;
+    messagesMap[data.id] = div;
+  } else {
+    // Untuk pesan lokal sementara (optimistic), pakai ID sementara
+    const tempId = 'temp-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+    div.dataset.msgId = tempId;
+    messagesMap[tempId] = div;
+  }
 
   let content = '';
   if (data.type === 'text') {
-    content = `<div class="bubble">${data.text}</div>`;
+    content = `<div class="bubble">${data.text || ''}</div>`;
   } else if (data.type === 'file') {
     content = `<div class="bubble">
-                 <img src="${data.fileUrl}" class="file-preview" alt="File"/>
+                 <img src="${data.fileUrl || ''}" class="file-preview" alt="File"/>
                  ${data.caption ? `<p>${data.caption}</p>` : ''}
                </div>`;
     if (data.viewOnce) {
       div.classList.add('view-once');
-      // Asumsi auto-delete setelah dilihat, emit ke server
-      setTimeout(() => socket.emit('delete-for-everyone', { msgId: data.id }), 5000); // Contoh delay 5s
+      // Optional: auto hapus setelah dilihat (bisa diatur di server nanti)
     }
   } else if (data.type === 'deleted') {
     content = `<div class="bubble deleted-msg">Pesan ini telah dihapus</div>`;
@@ -789,7 +815,9 @@ function addMsg(data, side, time = timeNow()) {
     ${content}
     <div class="time">${time}</div>
   `;
-  if (side === 'me') {
+
+  // Tombol "Hapus untuk semua" hanya muncul kalau pesan sudah punya ID server DAN dari saya
+  if (data.id && side === 'me') {
     const action = document.createElement('div');
     action.className = 'msg-action';
     action.textContent = 'Hapus untuk semua';
@@ -800,6 +828,8 @@ function addMsg(data, side, time = timeNow()) {
 
   document.getElementById("messages").appendChild(div);
   div.scrollIntoView({ behavior: "smooth", block: "end" });
+
+  return div;  // optional, biar bisa di-track kalau perlu
 }
 
 function timeNow() {
@@ -812,9 +842,12 @@ function sendMessage() {
   const text = input.value.trim();
   if (!text || !partner) return;
 
-  const msgId = ++messageIdCounter;
-  socket.emit("message", { id: msgId, type: 'text', text });
-  addMsg({ id: msgId, type: 'text', text }, "me");
+  // Tampilkan dulu di layar sendiri (optimistic UI)
+  addMsg({ type: 'text', text }, "me");
+
+  // Kirim ke server tanpa ID
+  socket.emit("message", { type: 'text', text });
+
   input.value = "";
   input.focus();
 }
@@ -823,13 +856,25 @@ function previewFile() {
   selectedFile = document.getElementById('fileInput').files[0];
   if (!selectedFile) return;
 
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    document.getElementById('previewImage').src = e.target.result;
-    document.getElementById('previewImage').style.display = 'block';
+  const previewImg = document.getElementById('previewImage');
+  const isImage = selectedFile.type.startsWith('image/');
+
+  if (isImage) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      previewImg.src = e.target.result;
+      previewImg.style.display = 'block';
+      document.getElementById('filePreviewModal').style.display = 'grid';
+    };
+    reader.readAsDataURL(selectedFile);
+  } else {
+    // Untuk video atau file lain → tampilkan ikon atau pesan sederhana
+    previewImg.src = ''; // atau ganti ke placeholder
+    previewImg.style.display = 'none';
+    // Bisa tambah elemen teks: "File: " + selectedFile.name
+    showAlert("Preview hanya mendukung gambar untuk saat ini.");
     document.getElementById('filePreviewModal').style.display = 'grid';
-  };
-  reader.readAsDataURL(selectedFile);
+  }
 }
 
 function sendFile() {
@@ -841,43 +886,40 @@ function sendFile() {
   const formData = new FormData();
   formData.append('file', selectedFile);
 
-  console.log('Mulai upload ke: /upload');
-  console.log('Nama file:', selectedFile.name, 'Ukuran:', selectedFile.size);
-
   fetch('/upload', {
     method: 'POST',
     body: formData
   })
   .then(async res => {
-    console.log('Status respons:', res.status, res.statusText);
-    console.log('Headers:', [...res.headers.entries()]);
-
-    const text = await res.text();  // ambil dulu sebagai text (aman)
-    console.log('Respons mentah (potongan):', text.substring(0, 300));
-
     if (!res.ok) {
-      throw new Error(`Server error ${res.status} - ${text.substring(0, 100)}...`);
+      const errText = await res.text();
+      throw new Error(`Upload gagal: ${res.status} - ${errText.substring(0, 150)}`);
     }
 
-    let data;
-    try {
-      data = JSON.parse(text);
-    } catch (e) {
-      console.error('Gagal parse JSON. Respons bukan JSON:', text.substring(0, 200));
-      throw new Error('Server mengembalikan bukan JSON (mungkin HTML error page)');
-    }
-
+    const data = await res.json();
     if (!data.url) {
-      throw new Error('Respons JSON tidak punya field "url"');
+      throw new Error('Server tidak mengembalikan URL file');
     }
 
-    const msgId = ++messageIdCounter;
-    socket.emit("message", { id: msgId, type: 'file', fileUrl: data.url, caption, viewOnce });
-    addMsg({ id: msgId, type: 'file', fileUrl: data.url, caption, viewOnce }, "me");
+    // Tampilkan dulu di layar sendiri (optimistic)
+    addMsg({
+      type: 'file',
+      fileUrl: data.url,
+      caption,
+      viewOnce
+    }, "me");
+
+    // Kirim ke server tanpa ID client
+    socket.emit("message", {
+      type: 'file',
+      fileUrl: data.url,
+      caption,
+      viewOnce
+    });
   })
   .catch(err => {
-    console.error('Upload error lengkap:', err);
-    showAlert('Gagal upload: ' + err.message);
+    console.error('Gagal upload file:', err);
+    showAlert('Gagal mengirim file: ' + err.message);
   });
 
   cancelFilePreview();
@@ -901,17 +943,34 @@ function setupLongPress(msgElement, actionElement) {
 }
 
 function deleteForEveryone(msgId) {
+  if (!msgId || msgId.startsWith('temp-')) {
+    showToast("Pesan belum terkirim ke server, tidak bisa dihapus untuk semua");
+    return;
+  }
+
   socket.emit('delete-for-everyone', { msgId });
-  updateMsgAsDeleted(msgId);
+  updateMsgAsDeleted(msgId); // update tampilan sendiri langsung
 }
 
 function updateMsgAsDeleted(msgId) {
   const msgDiv = messagesMap[msgId];
   if (msgDiv) {
-    msgDiv.innerHTML = `
-      <div class="bubble deleted-msg">Pesan ini telah dihapus</div>
-      <div class="time">${timeNow()}</div>
-    `;
+    // Ganti isi bubble jadi pesan dihapus
+    const bubble = msgDiv.querySelector('.bubble');
+    if (bubble) {
+      bubble.innerHTML = 'Pesan ini telah dihapus';
+      bubble.className = 'bubble deleted-msg';
+    }
+
+    // Hapus tombol aksi kalau ada
+    const action = msgDiv.querySelector('.msg-action');
+    if (action) action.remove();
+
+    // Optional: tambah timestamp baru kalau mau
+    const timeEl = msgDiv.querySelector('.time');
+    if (timeEl) timeEl.textContent = timeNow();
+  } else {
+    console.warn(`Pesan dengan ID ${msgId} tidak ditemukan saat dihapus`);
   }
 }
 
@@ -929,7 +988,17 @@ socket.on("matched", p => {
   document.getElementById("videoCallBtn").style.display = "block";
 });
 
-socket.on("message", data => addMsg(data, "other"));
+socket.on("message", data => {
+  // data sekarang diharapkan punya .id dari server
+  // Tentukan side: kalau dari partner → "other", kalau dari diri sendiri → "me"
+  // Untuk sementara pakai logic sederhana (nanti bisa diperbaiki kalau server kirim field "from")
+  const side = data.fromMe ? "me" : "other";   // kalau server belum kirim "fromMe", ganti logika
+
+  addMsg(data, side);
+
+  // Optional: kalau ini pesan balasan dari server untuk pesan kita, bisa update temp ID
+  // tapi untuk sekarang cukup seperti ini
+});
 
 socket.on("delete-for-everyone", ({ msgId }) => updateMsgAsDeleted(msgId));
 
@@ -1026,33 +1095,56 @@ function updateConnectionUI() {
 }
 
 async function updateLatency() {
-  if (!pc || pc.connectionState !== "connected") return;
+  if (!pc) {
+    console.log("[LATENCY] pc tidak ada → skip update");
+    document.getElementById("netLeft").textContent = "— ms";
+    return;
+  }
+
+  if (pc.connectionState !== "connected") {
+    console.log("[LATENCY] Skip update: state bukan connected (" + pc.connectionState + ")");
+    document.getElementById("netLeft").textContent = "— ms";
+    return;
+  }
+
+  console.log("[LATENCY] Mulai ambil stats RTC...");
 
   try {
     const stats = await pc.getStats();
     let rtt = -1;
+    let foundAny = false;
 
+    // 1. Cari di candidate-pair (yang paling akurat & umum)
     stats.forEach(report => {
-      if (report.type === 'candidate-pair' &&
-          (report.nominated || report.selectedOrState === 'selected' || report.state === 'succeeded') &&
-          report.currentRoundTripTime !== undefined &&
-          report.currentRoundTripTime > 0) {
-        rtt = Math.round(report.currentRoundTripTime * 1000);
+      if (report.type === 'candidate-pair') {
+        if (report.currentRoundTripTime !== undefined && report.currentRoundTripTime > 0) {
+          if (report.nominated || report.selectedCandidatePairId || report.state === 'succeeded') {
+            rtt = Math.round(report.currentRoundTripTime * 1000);
+            foundAny = true;
+            console.log("[LATENCY] Dapat RTT dari candidate-pair (nominated/succeeded):", rtt, "ms");
+          }
+        }
       }
     });
 
+    // 2. Jika tidak ada, fallback ke candidate-pair lain (tanpa filter nominated)
     if (rtt === -1) {
       stats.forEach(report => {
         if (report.type === 'candidate-pair' && report.currentRoundTripTime > 0) {
           rtt = Math.round(report.currentRoundTripTime * 1000);
+          foundAny = true;
+          console.log("[LATENCY] Dapat RTT dari candidate-pair (fallback):", rtt, "ms");
         }
       });
     }
 
+    // 3. Jika masih tidak ada, coba dari remote-inbound-rtp (kadang lebih reliable di beberapa browser)
     if (rtt === -1) {
       stats.forEach(report => {
         if (report.type === 'remote-inbound-rtp' && report.roundTripTime > 0) {
           rtt = Math.round(report.roundTripTime * 1000);
+          foundAny = true;
+          console.log("[LATENCY] Dapat RTT dari remote-inbound-rtp:", rtt, "ms");
         }
       });
     }
@@ -1063,7 +1155,9 @@ async function updateLatency() {
     if (rtt > 0 && !isNaN(rtt)) {
       lastRTT = rtt;
       netLeft.textContent = `${lastRTT} ms`;
+      console.log("[LATENCY] Sukses update UI →", lastRTT, "ms");
 
+      // Warna berdasarkan latency
       netPill.style.color = '#34d399';
       netPill.style.borderColor = '#0f9d6e';
 
@@ -1076,34 +1170,46 @@ async function updateLatency() {
         netPill.style.borderColor = '#b91c1c';
       }
     } else {
-      netLeft.textContent = "— ms";
+      netLeft.textContent = foundAny ? "— ms" : "No RTT";
       netPill.style.color = '#94a3b8';
       netPill.style.borderColor = '#475569';
+      console.log("[LATENCY] RTT tidak ditemukan atau 0 → tampil", netLeft.textContent);
     }
   } catch (err) {
-    console.error("getStats error:", err);
+    console.error("[LATENCY] Error saat getStats:", err.name, err.message);
     document.getElementById("netLeft").textContent = "Err";
+    document.getElementById("netStatus").style.color = '#ef4444';
+    document.getElementById("netStatus").style.borderColor = '#b91c1c';
   }
 }
 
 function checkSignal() {
   if (!pc) {
+    console.log("[NET] pc tidak ada → hide pill");
     document.getElementById("netStatus").style.display = "none";
     return;
   }
 
   const state = pc.connectionState;
+  console.log("[NET] Connection state saat ini:", state);
+
   const netPill = document.getElementById("netStatus");
 
   if (state === "connected") {
-    netPill.style.display = "flex";           // ← ini yang bikin pill muncul!
-    updateLatency();                          // update pertama kali
+    console.log("[NET] CONNECTED → tampilkan pill & mulai latency");
+    netPill.style.display = "flex";
+    updateLatency();  // panggil sekali langsung
     clearInterval(window.latencyInterval);
-    window.latencyInterval = setInterval(updateLatency, 1500); // update setiap 1.5 detik
+    window.latencyInterval = setInterval(() => {
+      console.log("[NET] Update latency interval...");
+      updateLatency();
+    }, 2000);  // naikkan ke 2 detik biar tidak terlalu spam log
   } else if (state === "connecting" || state === "new") {
+    console.log("[NET] Connecting → tampilkan 'Connecting...'");
     netPill.style.display = "flex";
     document.getElementById("netLeft").textContent = "Connecting...";
   } else {
+    console.log("[NET] State lain (" + state + ") → sembunyikan pill");
     netPill.style.display = "none";
     clearInterval(window.latencyInterval);
     document.getElementById("netLeft").textContent = "— ms";
@@ -1356,37 +1462,63 @@ async function switchCamera() {
   }
 
   try {
-    const videoTrack = localStream.getVideoTracks()[0];
-    if (videoTrack) {
-      videoTrack.stop();
-      localStream.removeTrack(videoTrack);
+    // 1. Matikan track video lama (penting!)
+    const oldVideoTrack = localStream.getVideoTracks()[0];
+    if (oldVideoTrack) {
+      oldVideoTrack.stop();           // release hardware lock
+      localStream.removeTrack(oldVideoTrack);  // hapus dari stream
     }
 
+    // 2. Tentukan mode baru
     const mode = isFront ? "environment" : "user";
     isFront = !isFront;
 
-    const newStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: mode, width: { ideal: 480 }, height: { ideal: 640 } }
-    });
+    // 3. Request stream baru dengan facingMode
+    const newConstraints = {
+      video: {
+        facingMode: { exact: mode },   // exact biar paksa
+        width: { ideal: 480 },
+        height: { ideal: 640 },
+        frameRate: { ideal: 30 }
+      }
+    };
 
+    const newStream = await navigator.mediaDevices.getUserMedia(newConstraints);
+
+    // 4. Ambil track video baru
     const newVideoTrack = newStream.getVideoTracks()[0];
+    if (!newVideoTrack) throw new Error("Tidak ada track video baru");
+
+    // 5. Tambahkan ke localStream (untuk tampilan lokal)
     localStream.addTrack(newVideoTrack);
 
+    // 6. Update tampilan lokal
     const localVideo = document.getElementById("localVideo");
     localVideo.srcObject = localStream;
-    localVideo.play().catch(()=>{});
+    localVideo.play().catch(e => console.log("Play error:", e));
 
+    // 7. Mirror hanya kalau front camera
     localVideo.style.transform = isFront ? "scaleX(-1)" : "scaleX(1)";
 
+    // 8. Ganti track di peer connection (kirim ke remote)
     if (pc) {
-      const sender = pc.getSenders().find(s => s.track && s.track.kind === "video");
-      if (sender) await sender.replaceTrack(newVideoTrack);
+      const videoSender = pc.getSenders().find(s => s.track && s.track.kind === "video");
+      if (videoSender) {
+        await videoSender.replaceTrack(newVideoTrack);
+        console.log("Track video berhasil diganti di peer connection");
+      } else {
+        console.warn("Tidak menemukan video sender");
+      }
     }
 
     showToast(`Kamera ${isFront ? "depan" : "belakang"} aktif`);
-  } catch (e) {
-    console.error("Gagal switch kamera:", e);
-    showAlert("Gagal mengganti kamera");
+
+  } catch (err) {
+    console.error("Switch camera gagal:", err.name, err.message);
+    showAlert("Gagal ganti kamera: " + (err.message || "Coba restart halaman"));
+
+    // Optional: kembalikan ke mode sebelumnya kalau gagal
+    isFront = !isFront;
   }
 }
 
