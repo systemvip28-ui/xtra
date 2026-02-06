@@ -12,6 +12,47 @@
 </head>
 <body>
 <style>
+/* PIP normal di dalam video call (ukuran sedang) */
+video.pip-normal {
+  width: 120px  !important;
+  height: 160px !important;
+  bottom: 20px  !important;
+  right: 20px   !important;
+  border-radius: 16px;
+  border: 3px solid rgba(255,255,255,0.25);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.6);
+}
+
+/* PIP super kecil saat diminimalkan ke chat */
+video.pip-mini {
+  width: 96px   !important;
+  height: 128px !important;
+  bottom: 100px !important;   /* atau sesuaikan */
+  right: 16px   !important;
+  border: 2px solid #10b981;
+  border-radius: 14px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+}
+
+/* Override yang sudah ada supaya lebih jelas */
+#localVideo.pip, #remoteVideo.pip {
+  position: absolute;
+  background: black;
+  object-fit: cover;
+  cursor: pointer;
+  z-index: 10;
+}
+
+#videoCallBtn.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;     /* blokir klik sama sekali */
+}
+
+#videoCallBtn {
+  transition: opacity 0.2s;
+}
+
 .media-status-overlay {
   position: absolute;
   top: 12px;
@@ -104,7 +145,7 @@
     </div>
     <div style="display:flex; gap:16px; font-size:1.4rem;">
       <i class="bi bi-arrow-clockwise" id="refreshBtn" onclick="refreshChat()" style="display:none; cursor:pointer"></i>
-      <i class="bi bi-camera-video-fill" onclick="callUser()" id="videoCallBtn" style="cursor:pointer"></i>
+      <i class="bi bi-camera-video-fill" id="videoCallBtn" style="cursor:pointer"></i>
       <i class="bi bi-person-circle" onclick="openProfile()" style="cursor:pointer"></i>
       <i class="bi bi-box-arrow-right" onclick="logout()" style="cursor:pointer; color:#f87171"></i>
     </div>
@@ -148,12 +189,20 @@
   <video id="localVideo" autoplay muted playsinline class="pip"></video>
 </div>
 
-  <div class="video-footer">
-    <i id="micBtn"   class="bi bi-mic-fill"        onclick="toggleMic()"></i>
-    <i id="camBtn"   class="bi bi-camera-video-fill" onclick="toggleCam()"></i>
-    <i class="bi bi-arrow-repeat" onclick="switchCamera()"></i>
-    <i class="bi bi-telephone-x-fill end-call" onclick="endCall()"></i>
-  </div>
+<div class="video-footer">
+  <i id="micBtn"   class="bi bi-mic-fill"        onclick="toggleMic()"></i>
+  <i id="camBtn"   class="bi bi-camera-video-fill" onclick="toggleCam()"></i>
+  <i class="bi bi-arrow-repeat" onclick="switchCamera()"></i>
+  
+  <!-- Tombol minimize baru -->
+  <i class="bi bi-box-arrow-down-right" 
+     id="minimizeCallBtn"
+     onclick="minimizeToPartnerView()"
+     title="Kecilkan & tetap lihat partner sambil chat"
+     style="font-size:1.5rem; cursor:pointer;"></i>
+  
+  <i class="bi bi-telephone-x-fill end-call" onclick="endCall()"></i>
+</div>
 </div>
 
 <div id="viewOnceModal">
@@ -173,6 +222,21 @@
       <button onclick="confirmDelete()" style="flex:1; background:var(--danger);">Hapus</button>
       <button onclick="closeDeleteModal()" style="flex:1;">Batal</button>
     </div>
+  </div>
+</div>
+
+<div id="miniRemoteVideoContainer" style="display:none; position:fixed; bottom:90px; right:16px; z-index:250; cursor:pointer;">
+  <video id="miniRemoteVideo" autoplay playsinline style="
+    width: 96px;
+    height: 128px;
+    border-radius: 16px;
+    border: 2px solid #10b981;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+    background: black;
+    object-fit: cover;
+  "></video>
+  <div style="position:absolute; top:4px; right:4px; background:rgba(0,0,0,0.6); color:white; font-size:10px; padding:2px 6px; border-radius:10px;">
+    Partner
   </div>
 </div>
 
@@ -259,6 +323,7 @@ let messagesMap = {};
 let myMicEnabled = true;
 let myCamEnabled = true;
 let partnerMicEnabled = true; 
+let isInVideoCall = false;          // true = sedang video call (full atau minimized)
 
 const ice = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
 
@@ -294,6 +359,126 @@ function updateMicIcons() {
   const remoteOverlay = document.getElementById("micStatusRemote");
   remoteOverlay?.classList.toggle("hidden", partnerMicEnabled);  // partnerMicEnabled = true berarti partner tidak mute
 }
+
+let isMinimizedToPartner = false;
+
+function minimizeToPartnerView() {
+  if (!localStream || !document.getElementById("remoteVideo").srcObject) {
+    showToast("Video belum terhubung");
+    return;
+  }
+
+  isMinimizedToPartner = true;
+
+  // Sembunyikan layar video call full
+  document.getElementById("videoScreen").style.display = "none";
+
+  // Gunakan video mini khusus (bukan video PIP biasa)
+  const miniContainer = document.getElementById("miniRemoteVideoContainer");
+  const miniVideo = document.getElementById("miniRemoteVideo");
+
+  miniVideo.srcObject = document.getElementById("remoteVideo").srcObject;
+  miniVideo.className = "pip-mini";   // pakai class mini
+  miniVideo.play().catch(e => console.log("Mini remote play error:", e));
+
+  miniContainer.style.display = "block";
+
+  showToast("Mode mini • partner tetap terlihat • chat dibuka");
+}
+
+// Klik mini → kembali ke full video call
+document.getElementById("miniRemoteVideoContainer")?.addEventListener("click", function() {
+  if (!isMinimizedToPartner) return;
+
+  isMinimizedToPartner = false;
+  document.getElementById("miniRemoteVideoContainer").style.display = "none";
+  document.getElementById("videoScreen").style.display = "flex";
+
+  // Kembalikan srcObject
+  const remoteVideo = document.getElementById("remoteVideo");
+  remoteVideo.srcObject = document.getElementById("miniRemoteVideo").srcObject;
+
+  // Pastikan class PIP kembali ke ukuran normal
+  if (remoteVideo.classList.contains("pip")) {
+    remoteVideo.classList.remove("pip-mini");
+    remoteVideo.classList.add("pip-normal");   // atau langsung pakai .pip + CSS
+  }
+
+  // Reset layout kalau perlu
+  resetVideoLayout();
+
+  showToast("Kembali ke mode video penuh");
+});
+
+let isVideoMinimized = false;
+
+function minimizeVideoCall() {
+  if (!localStream) return;
+
+  isVideoMinimized = true;
+
+  // Sembunyikan layar video call full
+  document.getElementById("videoScreen").style.display = "none";
+
+  // Tampilkan mini video (wajah kamu sendiri)
+  const miniContainer = document.getElementById("miniLocalVideoContainer");
+  const miniVideo     = document.getElementById("miniLocalVideo");
+
+  miniVideo.srcObject = localStream;
+  miniVideo.play().catch(e => console.log("Mini play error:", e));
+
+  miniContainer.style.display = "block";
+
+  // Optional: beri tahu partner kalau kamu minimize (bisa skip)
+  // socket.emit("video-minimized", true);
+
+  showToast("Video call diminimalkan • chat dibuka kembali");
+}
+
+function updateVideoCallButton() {
+  const btn = document.getElementById("videoCallBtn");
+  if (!btn) return;
+
+  if (isInVideoCall) {
+    // Sedang video call → disable
+    btn.style.opacity = "0.4";
+    btn.style.cursor = "not-allowed";
+    btn.title = "Sedang dalam panggilan video";
+    
+    // Cara 1: hapus event listener (paling aman)
+    btn.onclick = null;
+    
+    // Cara 2 (alternatif): tambah class disabled kalau mau style lebih kustom
+    // btn.classList.add("disabled");
+  } else {
+    // Tidak sedang call → enable normal
+    btn.style.opacity = "1";
+    btn.style.cursor = "pointer";
+    btn.title = "Mulai video call";
+    
+    // Kembalikan fungsi klik
+    btn.onclick = callUser;
+    
+    // btn.classList.remove("disabled");
+  }
+}
+
+function restoreVideoCall() {
+  if (!isVideoMinimized) return;
+
+  isVideoMinimized = false;
+
+  document.getElementById("miniLocalVideoContainer").style.display = "none";
+  document.getElementById("videoScreen").style.display = "flex";
+
+  // Kembalikan srcObject ke localVideo asli
+  document.getElementById("localVideo").srcObject = localStream;
+
+  showToast("Kembali ke mode video penuh");
+}
+
+// Bonus: klik mini video → kembali ke full
+document.getElementById("miniLocalVideoContainer")?.addEventListener("click", restoreVideoCall);
 
 document.getElementById("localVideo").onclick = function() {
   const local  = document.getElementById("localVideo");
@@ -737,6 +922,10 @@ socket.on("matched", p => {
   document.querySelector(".footer button").disabled = false;
   document.getElementById("refreshBtn").style.display = "none";
   document.getElementById("videoCallBtn").style.display = "block";
+isInVideoCall = false;
+  updateVideoCallButton();          // pastikan tombol aktif
+  
+  document.getElementById("videoCallBtn").style.display = "block";  // kalau pakai display none awalnya
 });
 
 socket.on("message", data => {
@@ -1003,6 +1192,10 @@ async function callUser() {
     return;
   }
 
+  // Set status call aktif → disable tombol
+  isInVideoCall = true;
+  updateVideoCallButton();
+
   const waitingModal = document.getElementById("waitingModal");
   const waitingText = document.getElementById("waitingText");
   waitingText.textContent = "Menunggu " + (partner.name || "partner") + " menerima panggilan...";
@@ -1012,6 +1205,8 @@ async function callUser() {
     if (waitingModal.style.display === "grid") {
       waitingModal.style.display = "none";
       showAlert("Panggilan tidak dijawab.");
+      isInVideoCall = false;
+      updateVideoCallButton();
     }
   }, 30000);
 
@@ -1019,6 +1214,8 @@ async function callUser() {
     const hasMedia = await startMedia();
     if (!hasMedia) {
       waitingModal.style.display = "none";
+      isInVideoCall = false;
+      updateVideoCallButton();
       return;
     }
 
@@ -1026,14 +1223,15 @@ async function callUser() {
 
     localStream.getTracks().forEach(track => {
       pc.addTrack(track, localStream);
-      console.log("Track ditambahkan:", track.kind);
     });
 
-    socket.emit("call-user");  
+    socket.emit("call-user");
 
   } catch (err) {
     console.error("Gagal memulai panggilan:", err);
     waitingModal.style.display = "none";
+    isInVideoCall = false;
+    updateVideoCallButton();
     showAlert("Gagal memulai video call: " + err.message);
   }
 }
@@ -1101,15 +1299,20 @@ function resetVideoLayout() {
 
   isPipSwapped = false;
 
-  local.classList.remove("full");
-  local.classList.add("pip");
-  remote.classList.remove("pip");
-  remote.classList.add("full");
-
-  
+  // Reset class dulu
+  local.className  = "pip pip-normal";   // atau hanya "pip" kalau CSS #localVideo.pip sudah benar
+  remote.className = "full";
 
   local.style.zIndex = "10";
   remote.style.zIndex = "5";
+
+  // Pastikan tidak ada sisa class mini
+  local.classList.remove("pip-mini");
+  remote.classList.remove("pip-mini");
+
+  // Mirror local kalau kamera depan
+  local.style.transform  = isFront ? "scaleX(-1)" : "none";
+  remote.style.transform = "none";
 }
 
 socket.on("offer", async o => {
@@ -1176,29 +1379,75 @@ socket.on("media-status", (status) => {
 });
 
 function endCall() {
-  if (pc) pc.close();
-  if (localStream) localStream.getTracks().forEach(t => t.stop());
-  document.getElementById("videoScreen").style.display = "none";
-  document.getElementById("netStatus").style.display = "none";
+  // Tutup peer connection jika ada
+  if (pc) {
+    pc.close();
+    pc = null;
+  }
+
+  // Stop semua track media lokal (kamera & mic)
+  if (localStream) {
+    localStream.getTracks().forEach(track => track.stop());
+    localStream = null;
+  }
+
+  // Sembunyikan layar video call & status network
+  const videoScreen = document.getElementById("videoScreen");
+  if (videoScreen) videoScreen.style.display = "none";
+
+  const netStatus = document.getElementById("netStatus");
+  if (netStatus) netStatus.style.display = "none";
+
+  // Beritahu server bahwa call diakhiri
   socket.emit("end-call");
-  pc = localStream = null;
+
+  // Reset flag-flag status
   isPipSwapped = false;
+  isVideoMinimized = false;
+  isMinimizedToPartner = false;
+  isInVideoCall = false;                  // Penting: reset status call agar tombol bisa aktif lagi
 
-  // HAPUS baris ini agar status mute tidak reset
-  // myMicEnabled = true;
-  // partnerMicEnabled = true;
+  // Sembunyikan mini remote container kalau sedang muncul
+  const miniContainer = document.getElementById("miniRemoteVideoContainer");
+  if (miniContainer) {
+    miniContainer.style.display = "none";
+  }
 
-  // Tetap sembunyikan overlay saat video call mati
-  document.getElementById("remoteMicStatus")?.classList.add("hidden");
+  // Kosongkan srcObject mini video agar tidak memory leak
+  const miniVideo = document.getElementById("miniRemoteVideo");
+  if (miniVideo) {
+    miniVideo.srcObject = null;
+  }
 
-  // Opsional: update tombol footer sesuai status terakhir (tidak reset)
-  document.getElementById("micBtn").className = 
-    myMicEnabled ? "bi bi-mic-fill" : "bi bi-mic-mute-fill muted";
+  // Jaga status mute & cam tetap seperti terakhir (tidak reset ke true)
+  // Update icon tombol mic & cam di footer sesuai status terakhir
+  const micBtn = document.getElementById("micBtn");
+  if (micBtn) {
+    micBtn.className = myMicEnabled 
+      ? "bi bi-mic-fill" 
+      : "bi bi-mic-mute-fill muted";
+  }
 
-  document.getElementById("camBtn").className = 
-    localStream?.getVideoTracks()[0]?.enabled 
+  const camBtn = document.getElementById("camBtn");
+  if (camBtn) {
+    // Karena localStream sudah di-stop, kita pakai status boolean terakhir saja
+    camBtn.className = myCamEnabled 
       ? "bi bi-camera-video-fill" 
       : "bi bi-camera-video-off-fill muted";
+  }
+
+  // Sembunyikan overlay mute (kalau ada)
+  const remoteMicOverlay = document.getElementById("micStatusRemote");
+  if (remoteMicOverlay) remoteMicOverlay.classList.add("hidden");
+
+  const localMicOverlay = document.getElementById("micStatusLocal");
+  if (localMicOverlay) localMicOverlay.classList.add("hidden");
+
+  // Enable kembali tombol video call di header
+  updateVideoCallButton();
+
+  // Optional: beri feedback ke user
+  showToast("Panggilan video diakhiri");
 }
 
 socket.on("end-call", endCall);
