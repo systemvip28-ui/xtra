@@ -8,689 +8,10 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"/>
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 
-  <style>
-    :root {
-      --bg:        #0d1117;
-      --surface:   #161b22;
-      --surface-2: #1f2937;
-      --accent:    #10b981;
-      --accent-dark:#059669;
-      --danger:    #ef4444;
-      --warning:   #f59e0b;
-      --success:   #10b981;
-      --text:      #e2e8f0;
-      --text-sec:  #94a3b8;
-      --border:    #30363d;
-      --me:        #065f46;
-      --other:     #1e293b;
-    }
-
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    html, body {
-      height: 100%;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      overflow: hidden;
-    }
-
-    .screen {
-      height: 100dvh;
-      display: grid;
-      place-items: center;
-      padding: 16px;
-    }
-
-    .card {
-      width: 100%;
-      max-width: 420px;
-      background: var(--surface);
-      border-radius: 20px;
-      border: 1px solid var(--border);
-      padding: 28px 24px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.4);
-    }
-
-    .logo-big {
-      font-size: 3.8rem;
-      margin-bottom: 0.5rem;
-      text-align: center;
-    }
-
-    h1, h2, h3 {
-      text-align: center;
-    }
-
-    h1 { font-size: 1.75rem; font-weight: 700; margin-bottom: 0.5rem; }
-    h2 { margin-bottom: 1.5rem; }
-    .subtitle {
-      color: var(--text-sec);
-      text-align: center;
-      font-size: 0.95rem;
-      margin-bottom: 1.8rem;
-    }
-
-    input, select, button {
-      width: 100%;
-      padding: 14px 16px;
-      margin-bottom: 12px;
-      border-radius: 12px;
-      border: 1px solid var(--border);
-      background: var(--surface-2);
-      color: white;
-      font-size: 1rem;
-    }
-
-    input::placeholder, select option:disabled {
-      color: #64748b;
-    }
-
-    button {
-      background: var(--accent);
-      color: white;
-      font-weight: 600;
-      border: none;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    button:hover {
-      background: var(--accent-dark);
-      transform: translateY(-1px);
-    }
-
-    button:active {
-      transform: translateY(0);
-    }
-
-    .btn-danger {
-      background: var(--danger);
-    }
-    .btn-danger:hover {
-      background: #dc2626;
-    }
-.view-once-wrapper,
-.normal-image-wrapper {
-  cursor: pointer;
-}
-
-.normal-image-wrapper img {
-  transition: transform 0.2s;
-}
-
-.normal-image-wrapper:hover img {
-  transform: scale(1.03);
-}
-/* Tambahkan atau ganti di dalam <style> */
-/* ── View Once Wrapper ──────────────────────────────────────── */
-.view-once-wrapper {
-  position: relative;
-  cursor: pointer;
-  user-select: none;
-  border-radius: 12px;
-  overflow: hidden;
-  background: #0f172a;
-  aspect-ratio: 3/4;          /* atau 4/3 sesuai selera */
-  max-width: 260px;
-  margin: 4px 0;
-}
-
-.view-once-blur {
-  position: absolute;
-  inset: 0;
-  background: rgba(15,23,42,0.92);
-  backdrop-filter: blur(10px);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-size: 1.4rem;
-  gap: 8px;
-  z-index: 2;
-  transition: opacity 0.3s;
-}
-
-.view-once-blur.hidden {
-  opacity: 0;
-  pointer-events: none;
-}
-
-.view-once-icon {
-  font-size: 2.8rem;
-  color: var(--text-sec);
-}
-
-.view-once-text {
-  font-size: 0.9rem;
-  opacity: 0.9;
-  text-align: center;
-  max-width: 80%;
-}
-
-/* Modal view once */
-#viewOnceModal {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.92);
-  z-index: 400;
-  display: none;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-}
-
-.vo-header {
-  width: 100%;
-  max-width: 420px;
-  color: white;
-  font-size: 1.1rem;
-  font-weight: 600;
-  padding: 12px 16px;
-  background: rgba(30,41,59,0.6);
-  border-radius: 12px 12px 0 0;
-  text-align: center;
-  backdrop-filter: blur(8px);
-}
-
-.vo-content {
-  position: relative;
-  max-width: 90vw;
-  max-height: 70vh;
-  border-radius: 0 0 12px 12px;
-  overflow: hidden;
-  background: #000;
-}
-
-.vo-img {
-  max-width: 100%;
-  max-height: 70vh;
-  object-fit: contain;
-  display: block;
-}
-
-.vo-close-btn {
-  position: absolute;
-  bottom: 20px;
-  max-width: 90vw;
-  left: 50%;
-  transform: translateX(-50%);
-  background: #161b22;
-  color: white;
-  border: none;
-  padding: 12px 28px;
-  font-size: 1rem;
-  font-weight: 500;
-  cursor: pointer;
-  backdrop-filter: blur(6px);
-  box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-}
-
-.vo-close-btn:hover {
-  background: #161b22;
-}
-/* Pastikan .screen tetap full height & center */
-.screen {
-  height: 100dvh;
-  display: flex;               /* ubah dari grid ke flex agar lebih fleksibel */
-  justify-content: center;
-  align-items: center;
-  padding: 16px;
-}
-
-/* Container khusus untuk konten searching */
-.searching-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 1.8rem;                 /* jarak antar elemen */
-  text-align: center;
-  max-width: 320px;
-  width: 100%;
-}
-
-
-/* Teks utama */
-.searching-text {
-  font-size: 1.25rem;
-  font-weight: 500;
-  opacity: 0.95;
-  color: var(--text);
-}
-
-/* Teks tambahan (misal night mode) */
-.searching-subtext {
-  font-size: 0.95rem;
-  color: var(--text-sec);
-  line-height: 1.4;
-  margin-top: 0.5rem;
-}
-
-/* Optional: animasi fade-in halus saat muncul */
-#searching {
-  opacity: 0;
-  transition: opacity 0.4s ease;
-}
-
-#searching[style*="display: flex"],
-#searching[style*="display:block"] {
-  opacity: 1;
-}
-    .loader {
-      width: 48px;
-      height: 48px;
-      border: 5px solid #2d3748;
-      border-top: 5px solid var(--accent);
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-    }
-
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    #chat {
-      display: none;
-      flex-direction: column;
-      height: 100dvh;
-    }
-
-    .header {
-      height: 64px;
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 16px;
-      font-weight: 500;
-    }
-
-    .partner-info {
-      line-height: 1.3;
-    }
-
-    .partner-name {
-      font-size: 1.1rem;
-      font-weight: 600;
-    }
-
-    .partner-status {
-      font-size: 0.82rem;
-      opacity: 0.8;
-    }
-
-    .status-online  { color: #34d399; }
-    .status-offline { color: #f87171; }
-    .status-typing  { color: #fbbf24; font-style: italic; }
-
-    .encryption-info {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: var(--surface-2);
-      padding: 6px 12px;
-      border-bottom: 1px solid var(--border);
-      font-size: 0.85rem;
-      color: var(--text-sec);
-      gap: 6px;
-    }
-
-    .encryption-info i {
-      font-size: 1rem;
-      color: var(--success);
-    }
-
-    #messages {
-      flex: 1;
-      padding: 16px;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .msg {
-      max-width: 78%;
-      display: flex;
-      flex-direction: column;
-      position: relative;
-      user-select: none; /* Untuk long press */
-    }
-
-    .me   { align-self: flex-end; }
-    .other { align-self: flex-start; }
-
-    .bubble {
-      padding: 10px 14px;
-      border-radius: 18px;
-      font-size: 0.96rem;
-      line-height: 1.4;
-      word-break: break-word;
-    }
-
-    .me .bubble {
-      background: var(--me);
-      border-bottom-right-radius: 4px;
-    }
-
-    .other .bubble {
-      background: var(--other);
-      border-bottom-left-radius: 4px;
-    }
-
-    .time {
-      font-size: 0.68rem;
-      opacity: 0.6;
-      margin-top: 3px;
-      align-self: flex-end;
-    }
-
-    .file-preview {
-      max-width: 100%;
-      max-height: 200px;
-      border-radius: 8px;
-    }
-
-    .view-once {
-      opacity: 0.7;
-      font-style: italic;
-    }
-
-    .deleted-msg {
-      font-style: italic;
-      color: var(--text-sec);
-    }
-
-    .footer {
-      padding: 12px 16px;
-      background: var(--surface);
-      border-top: 1px solid var(--border);
-      display: flex;
-      gap: 10px;
-    }
-
-    .footer input {
-      flex: 1;
-      border-radius: 999px;
-      padding: 12px 20px;
-      border: none;
-    }
-
-    .footer button {
-      width: 48px;
-      height: 48px;
-      border-radius: 50%;
-      font-size: 1.4rem;
-      display: grid;
-      place-items: center;
-      padding: 0;
-    }
-
-    .video-wrap {
-      position: fixed;
-      inset: 0;
-      background: black;
-      display: none;
-      flex-direction: column;
-      z-index: 100;
-    }
-
-    .video-header {
-      height: 56px;
-      background: rgba(0,0,0,0.6);
-      color: white;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 16px;
-      font-size: 1.05rem;
-      backdrop-filter: blur(10px);
-    }
-
-    .video-body {
-      flex: 1;
-      position: relative;
-      background: #000;
-    }
-video {
-  transform: scaleX(-1) !important;
-}
-    video {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      transition: all 0.4s ease;
-    }
-/* Mirror semua video seperti cermin (local + remote) */
-video#localVideo,
-video#remoteVideo,
-#localVideo.pip, #localVideo.full,
-#remoteVideo.pip, #remoteVideo.full {
-  transform: scaleX(-1) !important;
-}
-
-    #localVideo.pip,
-    #remoteVideo.pip {
-      position: absolute;
-      bottom: 20px;
-      right: 20px;
-      width: 120px !important;
-      height: 160px !important;
-      border-radius: 16px;
-      border: 3px solid rgba(255,255,255,0.25);
-      box-shadow: 0 8px 25px rgba(0,0,0,0.6);
-      background: black;
-      object-fit: cover;
-      cursor: pointer;
-      z-index: 10;
-    }
-
-    /* Full screen style */
-    #localVideo.full,
-    #remoteVideo.full {
-      position: static;
-      width: 100% !important;
-      height: 100% !important;
-      border-radius: 0 !important;
-      border: none !important;
-      box-shadow: none !important;
-      z-index: 5;
-    }
-
-#localVideo {
-  transform: scaleX(-1);
-}
-
-    .video-footer {
-      height: 80px;
-      background: rgba(0,0,0,0.6);
-      backdrop-filter: blur(10px);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 24px;
-    }
-
-    .video-footer i {
-      font-size: 1.6rem;
-      width: 56px;
-      height: 56px;
-      border-radius: 50%;
-      background: rgba(255,255,255,0.08);
-      display: grid;
-      place-items: center;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .video-footer i:hover {
-      background: rgba(255,255,255,0.15);
-    }
-
-    .video-footer i.muted {
-      color: #fca5a5;
-      background: rgba(239,68,68,0.18);
-    }
-
-    .video-footer .end-call {
-      background: var(--danger);
-    }
-
-    .modal {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.75);
-      display: none;
-      place-items: center;
-      z-index: 200;
-      backdrop-filter: blur(4px);
-    }
-
-    .modal-box {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 28px;
-      width: 90%;
-      max-width: 360px;
-      text-align: center;
-      box-shadow: 0 20px 40px rgba(0,0,0,0.5);
-    }
-
-    .modal-box button {
-      margin: 8px 0;
-    }
-
-    #actionToast {
-      position: fixed;
-      bottom: 90px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(30,41,59,0.92);
-      color: white;
-      padding: 12px 24px;
-      border-radius: 999px;
-      font-size: 0.95rem;
-      z-index: 300;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.4s, transform 0.4s;
-      backdrop-filter: blur(10px);
-    }
-
-    .net-pill {
-      background: rgba(30,41,59,0.85);
-      padding: 5px 12px;
-      border-radius: 999px;
-      font-size: 0.85rem;
-      font-weight: 600;
-      display: none;
-      align-items: center;
-      backdrop-filter: blur(10px);
-      color: #34d399;
-      border: 1px solid #0f9d6e;
-    }
-
-    .video-header .net-pill {
-      margin-left: auto;
-      align-self: center;
-    }
-
-    #filePreviewModal .preview-img {
-      max-width: 100%;
-      max-height: 200px;
-      margin-bottom: 12px;
-      border-radius: 8px;
-    }
-
-    #filePreviewModal .caption-input {
-      width: 100%;
-      padding: 10px;
-      margin-bottom: 12px;
-      border-radius: 8px;
-      border: 1px solid var(--border);
-      background: var(--surface-2);
-      color: var(--text);
-    }
-
-    #filePreviewModal .view-once-checkbox {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 16px;
-      font-size: 0.95rem;
-    }
-
-.msg-action {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  left: -80px;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 7px 12px;
-  font-size: 0.9rem;
-  color: var(--danger);
-  cursor: pointer;
-  z-index: 10;
-  display: none;               /* PASTIKAN DEFAULT NONE */
-  white-space: nowrap;
-  user-select: none;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-  opacity: 0;
-  transition: opacity 0.2s ease, transform 0.2s ease;
-}
-
-/* Muncul saat hover atau long-press */
-.msg.me:hover .msg-action,
-.msg.me.long-press .msg-action,
-.msg.me.clicked .msg-action {   /* opsional: jika ingin muncul saat klik */
-  display: block;
-  opacity: 1;
-  transform: translateY(-50%) translateX(5px); /* sedikit efek geser */
-}
-
-/* Di mobile, long-press lebih dominan */
-@media (max-width: 500px) {
-  .msg-action {
-    left: -70px;
-    font-size: 0.82rem;
-    padding: 5px 10px;
-  }
-}
-
-.card:not(.hidden) {
-      opacity: 1;
-      transform: translateY(0);
-    }
-
-    .hidden {
-      display: none !important;
-    }
-    @media (max-width: 500px) {
-      .video-header .net-pill {
-        padding: 4px 10px;
-        font-size: 0.78rem;
-      }
-      #localVideo.pip, #remoteVideo.pip {
-        width: 100px !important;
-        height: 133px !important;
-        bottom: 16px;
-        right: 16px;
-      }
-    }
-  </style>
+<style> :root { --bg: #0d1117; --surface: #161b22; --surface-2: #1f2937; --accent: #10b981; --accent-dark:#059669; --danger: #ef4444; --warning: #f59e0b; --success: #10b981; --text: #e2e8f0; --text-sec: #94a3b8; --border: #30363d; --me: #065f46; --other: #1e293b; } * { margin: 0; padding: 0; box-sizing: border-box; } html, body { height: 100%; font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; background: var(--bg); color: var(--text); overflow: hidden; } .screen { height: 100dvh; display: grid; place-items: center; padding: 16px; } .card { width: 100%; max-width: 420px; background: var(--surface); border-radius: 20px; border: 1px solid var(--border); padding: 28px 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.4); } .logo-big { font-size: 3.8rem; margin-bottom: 0.5rem; text-align: center; } h1, h2, h3 { text-align: center; } h1 { font-size: 1.75rem; font-weight: 700; margin-bottom: 0.5rem; } h2 { margin-bottom: 1.5rem; } .subtitle { color: var(--text-sec); text-align: center; font-size: 0.95rem; margin-bottom: 1.8rem; } input, select, button { width: 100%; padding: 14px 16px; margin-bottom: 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2); color: white; font-size: 1rem; } input::placeholder, select option:disabled { color: #64748b; } button { background: var(--accent); color: white; font-weight: 600; border: none; cursor: pointer; transition: all 0.2s; } button:hover { background: var(--accent-dark); transform: translateY(-1px); } button:active { transform: translateY(0); } .btn-danger { background: var(--danger); } .btn-danger:hover { background: #dc2626; } .view-once-wrapper, .normal-image-wrapper { cursor: pointer; } .normal-image-wrapper img { transition: transform 0.2s; } .normal-image-wrapper:hover img { transform: scale(1.03); } .view-once-wrapper { position: relative; cursor: pointer; user-select: none; border-radius: 12px; overflow: hidden; background: #0f172a; aspect-ratio: 3/4; max-width: 260px; margin: 4px 0; } .view-once-blur { position: absolute; inset: 0; background: rgba(15,23,42,0.92); backdrop-filter: blur(10px); display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; font-size: 1.4rem; gap: 8px; z-index: 2; transition: opacity 0.3s; } .view-once-blur.hidden { opacity: 0; pointer-events: none; } .view-once-icon { font-size: 2.8rem; color: var(--text-sec); } .view-once-text { font-size: 0.9rem; opacity: 0.9; text-align: center; max-width: 80%; } #viewOnceModal { position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 400; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 16px; } .vo-header { width: 100%; max-width: 420px; color: white; font-size: 1.1rem; font-weight: 600; padding: 12px 16px; background: rgba(30,41,59,0.6); border-radius: 12px 12px 0 0; text-align: center; backdrop-filter: blur(8px); } .vo-content { position: relative; max-width: 90vw; max-height: 70vh; border-radius: 0 0 12px 12px; overflow: hidden; background: #000; } .vo-img { max-width: 100%; max-height: 70vh; object-fit: contain; display: block; } .vo-close-btn { position: absolute; bottom: 20px; max-width: 90vw; left: 50%; transform: translateX(-50%); background: #161b22; color: white; border: none; padding: 12px 28px; font-size: 1rem; font-weight: 500; cursor: pointer; backdrop-filter: blur(6px); box-shadow: 0 4px 15px rgba(0,0,0,0.5); } .vo-close-btn:hover { background: #161b22; } .screen { height: 100dvh; display: flex; justify-content: center; align-items: center; padding: 16px; } .searching-container { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.8rem; text-align: center; max-width: 320px; width: 100%; } .searching-text { font-size: 1.25rem; font-weight: 500; opacity: 0.95; color: var(--text); } .searching-subtext { font-size: 0.95rem; color: var(--text-sec); line-height: 1.4; margin-top: 0.5rem; } #searching { opacity: 0; transition: opacity 0.4s ease; } #searching[style*="display: flex"], #searching[style*="display:block"] { opacity: 1; } .loader { width: 48px; height: 48px; border: 5px solid #2d3748; border-top: 5px solid var(--accent); border-radius: 50%; animation: spin 1s linear infinite; } @keyframes spin { to { transform: rotate(360deg); } } #chat { display: none; flex-direction: column; height: 100dvh; } .header { height: 64px; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 16px; font-weight: 500; } .partner-info { line-height: 1.3; } .partner-name { font-size: 1.1rem; font-weight: 600; } .partner-status { font-size: 0.82rem; opacity: 0.8; } .status-online { color: #34d399; } .status-offline { color: #f87171; } .status-typing { color: #fbbf24; font-style: italic; } .encryption-info { display: flex; align-items: center; justify-content: center; background: var(--surface-2); padding: 6px 12px; border-bottom: 1px solid var(--border); font-size: 0.85rem; color: var(--text-sec); gap: 6px; } .encryption-info i { font-size: 1rem; color: var(--success); } #messages { flex: 1; padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; } .msg { max-width: 78%; display: flex; flex-direction: column; position: relative; user-select: none; } .me { align-self: flex-end; } .other { align-self: flex-start; } .bubble { padding: 10px 14px; border-radius: 18px; font-size: 0.96rem; line-height: 1.4; word-break: break-word; } .me .bubble { background: var(--me); border-bottom-right-radius: 4px; } .other .bubble { background: var(--other); border-bottom-left-radius: 4px; } .time { font-size: 0.68rem; opacity: 0.6; margin-top: 3px; align-self: flex-end; } .file-preview { max-width: 100%; max-height: 200px; border-radius: 8px; } .view-once { opacity: 0.7; font-style: italic; } .deleted-msg { font-style: italic; color: var(--text-sec); } .footer { padding: 12px 16px; background: var(--surface); border-top: 1px solid var(--border); display: flex; gap: 10px; } .footer input { flex: 1; border-radius: 999px; padding: 12px 20px; border: none; } .footer button { width: 48px; height: 48px; border-radius: 50%; font-size: 1.4rem; display: grid; place-items: center; padding: 0; } .video-wrap { position: fixed; inset: 0; background: black; display: none; flex-direction: column; z-index: 100; } .video-header { height: 56px; background: rgba(0,0,0,0.6); color: white; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; font-size: 1.05rem; backdrop-filter: blur(10px); } .video-body { flex: 1; position: relative; background: #000; } video { transform: scaleX(-1) !important; } video { width: 100%; height: 100%; object-fit: cover; transition: all 0.4s ease; } video#localVideo, video#remoteVideo, #localVideo.pip, #localVideo.full, #remoteVideo.pip, #remoteVideo.full { transform: scaleX(-1) !important; } #localVideo.pip, #remoteVideo.pip { position: absolute; bottom: 20px; right: 20px; width: 120px !important; height: 160px !important; border-radius: 16px; border: 3px solid rgba(255,255,255,0.25); box-shadow: 0 8px 25px rgba(0,0,0,0.6); background: black; object-fit: cover; cursor: pointer; z-index: 10; } #localVideo.full, #remoteVideo.full { position: static; width: 100% !important; height: 100% !important; border-radius: 0 !important; border: none !important; box-shadow: none !important; z-index: 5; } #localVideo { transform: scaleX(-1); } .video-footer { height: 80px; background: rgba(0,0,0,0.6); backdrop-filter: blur(10px); display: flex; justify-content: center; align-items: center; gap: 24px; } .video-footer i { font-size: 1.6rem; width: 56px; height: 56px; border-radius: 50%; background: rgba(255,255,255,0.08); display: grid; place-items: center; cursor: pointer; transition: all 0.2s; } .video-footer i:hover { background: rgba(255,255,255,0.15); } .video-footer i.muted { color: #fca5a5; background: rgba(239,68,68,0.18); } .video-footer .end-call { background: var(--danger); } .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.75); display: none; place-items: center; z-index: 200; backdrop-filter: blur(4px); } .modal-box { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 28px; width: 90%; max-width: 360px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.5); } .modal-box button { margin: 8px 0; } #actionToast { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); background: rgba(30,41,59,0.92); color: white; padding: 12px 24px; border-radius: 999px; font-size: 0.95rem; z-index: 300; opacity: 0; pointer-events: none; transition: opacity 0.4s, transform 0.4s; backdrop-filter: blur(10px); } .net-pill { background: rgba(30,41,59,0.85); padding: 5px 12px; border-radius: 999px; font-size: 0.85rem; font-weight: 600; display: none; align-items: center; backdrop-filter: blur(10px); color: #34d399; border: 1px solid #0f9d6e; } .video-header .net-pill { margin-left: auto; align-self: center; } #filePreviewModal .preview-img { max-width: 100%; max-height: 200px; margin-bottom: 12px; border-radius: 8px; } #filePreviewModal .caption-input { width: 100%; padding: 10px; margin-bottom: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); } #filePreviewModal .view-once-checkbox { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; font-size: 0.95rem; } .msg-action { position: absolute; top: 50%; transform: translateY(-50%); left: -80px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 7px 12px; font-size: 0.9rem; color: var(--danger); cursor: pointer; z-index: 10; display: none; white-space: nowrap; user-select: none; box-shadow: 0 2px 8px rgba(0,0,0,0.3); opacity: 0; transition: opacity 0.2s ease, transform 0.2s ease; } .msg.me:hover .msg-action, .msg.me.long-press .msg-action, .msg.me.clicked .msg-action { display: block; opacity: 1; transform: translateY(-50%) translateX(5px); } @media (max-width: 500px) { .msg-action { left: -70px; font-size: 0.82rem; padding: 5px 10px; } } .card:not(.hidden) { opacity: 1; transform: translateY(0); } .hidden { display: none !important; } @media (max-width: 500px) { .video-header .net-pill { padding: 4px 10px; font-size: 0.78rem; } #localVideo.pip, #remoteVideo.pip { width: 100px !important; height: 133px !important; bottom: 16px; right: 16px; } } </style>
 </head>
 <body>
 
-<!-- LOGIN / WELCOME -->
 <div class="screen" id="loginScreen">
   <div id="welcomeContent">
     <div class="logo-big">💬</div>
@@ -734,13 +55,11 @@ video#remoteVideo,
   </div>
 </div>
 
-<!-- SEARCHING -->
 <div class="screen" id="searching" style="display:none; flex-direction:column; gap:1.5rem;">
   <div class="loader"></div>
   <div style="font-size:1.1rem; opacity:0.9">Mencari temen ngobrol...</div>
 </div>
 
-<!-- MAIN CHAT -->
 <div id="chat">
   <div class="header">
     <div class="partner-info">
@@ -770,7 +89,6 @@ video#remoteVideo,
   </div>
 </div>
 
-<!-- VIDEO CALL INTERFACE -->
 <div id="videoScreen" class="video-wrap">
   <div class="video-header">
     <span id="callName">Video Call</span>
@@ -799,8 +117,7 @@ video#remoteVideo,
   </div>
   <button class="vo-close-btn" onclick="closeViewOnce()">Tutup</button>
 </div>
-<!-- MODALS -->
-<!-- Modal Konfirmasi Hapus Pesan -->
+
 <div id="deleteConfirmModal" class="modal" style="display:none;">
   <div class="modal-box">
     <h3>Konfirmasi Hapus</h3>
@@ -857,13 +174,10 @@ video#remoteVideo,
   <div class="modal-box" style="max-width: 400px; padding: 24px 20px;">
     <h3 style="margin-bottom: 1.2rem;">Pratinjau Gambar</h3>
     
-    <!-- Preview gambar/video lebih dulu, tepat di bawah judul -->
     <div style="text-align: center; margin-bottom: 1.5rem;">
       <img id="previewImage" class="preview-img" style="display:none; max-height: 260px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);"/>
-      <!-- Jika nanti mau support video preview, bisa tambah <video> di sini -->
     </div>
 
-    <!-- Caption -->
     <input 
       id="captionInput" 
       class="caption-input" 
@@ -871,13 +185,11 @@ video#remoteVideo,
       style="margin-bottom: 1.4rem;"
     />
 
-    <!-- Checkbox view once – lebih jelas dan terpisah -->
     <label class="view-once-checkbox" style="display: flex; align-items: center; gap: 10px; margin-bottom: 1.5rem; cursor: pointer; user-select: none;">
       <input type="checkbox" id="viewOnceCheckbox" style="width: 18px; height: 18px; accent-color: var(--accent);"/>
       <span style="margin-bottom:11px;font-size: 0.97rem; color: var(--text);">Kirim sebagai pesan sekali lihat</span>
     </label>
 
-    <!-- Tombol aksi -->
     <div style="display: flex; gap: 12px; margin-top: 0.8rem;">
       <button onclick="sendFile()" style="flex: 1;">Kirim</button>
       <button class="btn-danger" onclick="cancelFilePreview()" style="flex: 1;">Batal</button>
@@ -888,7 +200,6 @@ video#remoteVideo,
 <div id="actionToast"></div>
 
 <script>
-// ────────────────────────────────────────────────
 const socket = io("https://chat-jsb8.onrender.com");
 
 let partner = null;
@@ -898,15 +209,14 @@ let isPipSwapped = false;
 let callPending = false;
 let lastRTT = 0;
 let selectedFile = null;
-let messageIdCounter = 0; // Untuk assign ID unik ke pesan
-let messagesMap = {}; // Map pesan berdasarkan ID untuk delete
+let messageIdCounter = 0; 
+let messagesMap = {}; 
 
 const ice = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
 
 socket.on('message-confirmed', ({ id }) => {
   console.log('Pesan dikonfirmasi, ID:', id);
 
-  // Cari pesan terakhir me yang masih temp
   const lastMsg = document.querySelector('.msg.me:last-child');
   if (lastMsg && lastMsg.dataset.msgId.startsWith('temp-')) {
     const oldTempId = lastMsg.dataset.msgId;
@@ -914,36 +224,30 @@ socket.on('message-confirmed', ({ id }) => {
     messagesMap[id] = lastMsg;
     delete messagesMap[oldTempId];
 
-    // Tampilkan tombol hapus (jika ada)
     const action = lastMsg.querySelector('.msg-action');
     if (action) {
-      action.style.display = 'block';  // muncul setelah confirmed
+      action.style.display = 'block';  
     }
   }
 });
 
-// Variabel untuk menyimpan ID pesan yang akan dihapus
-// Variabel untuk menyimpan ID pesan yang akan dihapus
 let pendingDeleteMsgId = null;
 let pendingDeleteBubble = null;
 let pendingDeleteAction = null;
 
-// Buka modal konfirmasi hapus
 function openDeleteConfirm(msgId, bubbleElement, actionElement) {
   pendingDeleteMsgId = msgId;
   pendingDeleteBubble = bubbleElement;
   pendingDeleteAction = actionElement;
 
-  // Pastikan tombol tetap terlihat selama modal terbuka
   if (actionElement) actionElement.style.display = 'block';
 
   document.getElementById("deleteConfirmModal").style.display = "grid";
 }
 
-// Tutup modal tanpa hapus → sembunyikan tombol hapus lagi
 function closeDeleteModal() {
   if (pendingDeleteAction) {
-    pendingDeleteAction.style.display = 'none';  // <-- KUNCI: sembunyikan kembali
+    pendingDeleteAction.style.display = 'none';
   }
 
   pendingDeleteMsgId = null;
@@ -952,30 +256,25 @@ function closeDeleteModal() {
   document.getElementById("deleteConfirmModal").style.display = "none";
 }
 
-// Konfirmasi dan lakukan hapus → setelah hapus, tombol sudah di-remove jadi tidak perlu hide lagi
 function confirmDelete() {
   if (!pendingDeleteMsgId) {
     closeDeleteModal();
     return;
   }
 
-  // Update UI lokal dulu
   if (pendingDeleteBubble) {
     pendingDeleteBubble.innerHTML = 'Pesan ini telah dihapus';
     pendingDeleteBubble.className = 'bubble deleted-msg';
   }
 
-  // Hapus tombol aksi (sudah di-remove di sini)
   if (pendingDeleteAction) {
     pendingDeleteAction.remove();
   }
 
-  // Kirim ke server
   socket.emit('delete-for-everyone', { msgId: pendingDeleteMsgId });
 
-  showToast("Pesan dihapus untuk semua");
+  showToast("Pesan dihapus");
 
-  // Reset dan tutup modal
   closeDeleteModal();
 }
 
@@ -999,7 +298,6 @@ function closeAlert() {
   document.getElementById("alertModal").style.display = "none";
 }
 
-// ─── Login Flow ──────────────────────────────────
 function showLoginForm() {
   document.getElementById("welcomeContent").style.display = "none";
   document.getElementById("loginForm").classList.remove("hidden");
@@ -1025,7 +323,6 @@ function start() {
   document.getElementById("searching").style.display = "flex";
 }
 
-// ── Handler klik gambar view once ────────────────────────────────
 document.addEventListener('click', function(e) {
   const wrapper = e.target.closest('.view-once-wrapper, .normal-image-wrapper');
   if (!wrapper) return;
@@ -1036,7 +333,6 @@ document.addEventListener('click', function(e) {
 
   if (!src) return;
 
-  // Tampilkan modal
   const headerText = isViewOnce 
     ? `Gambar dari ${fromName}`
     : `Gambar dari ${fromName}`;
@@ -1045,37 +341,32 @@ document.addEventListener('click', function(e) {
   document.getElementById('voFullImage').src = src;
   document.getElementById('viewOnceModal').style.display = 'flex';
 
-  // Khusus view-once: hilangkan blur setelah dilihat
   if (isViewOnce) {
     const blurLayer = wrapper.querySelector('.view-once-blur');
     if (blurLayer) {
       blurLayer.classList.add('hidden');
     }
-    wrapper.style.pointerEvents = 'none'; // cegah klik ulang
+    wrapper.style.pointerEvents = 'none'; 
     wrapper.style.opacity = '0.85';
   }
-
-  // Untuk gambar biasa: tidak perlu ubah apa-apa di list
 });
-// ─── Chat ────────────────────────────────────────
+
 function addMsg(data, side, time = timeNow()) {
   const div = document.createElement("div");
   div.className = `msg ${side}`;
 
-  // ── Penanganan ID pesan ───────────────────────────────────────────────
   let msgId = data.id;
   if (msgId) {
-    // Pesan sudah punya ID permanen dari server
+
     div.dataset.msgId = msgId;
     messagesMap[msgId] = div;
   } else {
-    // Pesan lokal sementara (optimistic UI, belum confirmed)
+
     const tempId = 'temp-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
     div.dataset.msgId = tempId;
     messagesMap[tempId] = div;
   }
 
-  // ── Konten bubble berdasarkan tipe ───────────────────────────────────
   let content = '';
 
   if (data.type === 'text' || !data.type) {
@@ -1121,40 +412,35 @@ function addMsg(data, side, time = timeNow()) {
     content = `<div class="bubble deleted-msg">Pesan ini telah dihapus</div>`;
   }
 
-  // ── Struktur HTML lengkap pesan ───────────────────────────────────────
   div.innerHTML = `
     ${content}
     <div class="time">${time}</div>
   `;
 
-  // ── Tambah tombol "Hapus" HANYA untuk pesan sendiri ──────────────────
   if (side === 'me' && data.type !== 'deleted') {
     const action = document.createElement('div');
     action.className = 'msg-action';
     action.textContent = 'Hapus';
-    action.style.display = 'none';  // PASTI SEMBUNYI DI AWAL
+    action.style.display = 'none';
 
     action.onclick = (e) => {
-      e.stopPropagation(); // cegah event bubble ke pesan
+      e.stopPropagation(); 
       const currentMsgId = div.dataset.msgId;
 
       if (currentMsgId.startsWith('temp-')) {
-        showToast("Pesan belum terkirim sepenuhnya ke server");
+        showToast("Pesan belum terkirim ke server");
         return;
       }
 
-      // Buka modal konfirmasi
       const bubble = div.querySelector('.bubble');
       openDeleteConfirm(currentMsgId, bubble, action);
     };
 
     div.appendChild(action);
 
-    // Support long-press dan klik untuk menampilkan tombol sementara
     setupInteractionForDelete(div, action);
   }
 
-  // ── Masukkan ke chat & scroll otomatis ────────────────────────────────
   const messagesContainer = document.getElementById("messages");
   messagesContainer.appendChild(div);
   div.scrollIntoView({ behavior: "smooth", block: "end" });
@@ -1172,10 +458,8 @@ function sendMessage() {
   const text = input.value.trim();
   if (!text || !partner) return;
 
-  // Tampilkan dulu di layar sendiri (optimistic UI)
   addMsg({ type: 'text', text }, "me");
 
-  // Kirim ke server tanpa ID
   socket.emit("message", { type: 'text', text });
 
   input.value = "";
@@ -1198,10 +482,10 @@ function previewFile() {
     };
     reader.readAsDataURL(selectedFile);
   } else {
-    // Untuk video atau file lain → tampilkan ikon atau pesan sederhana
-    previewImg.src = ''; // atau ganti ke placeholder
+
+    previewImg.src = ''; 
     previewImg.style.display = 'none';
-    // Bisa tambah elemen teks: "File: " + selectedFile.name
+
     showAlert("Preview hanya mendukung gambar");
     document.getElementById('filePreviewModal').style.display = 'grid';
   }
@@ -1216,20 +500,15 @@ async function sendFile() {
   const caption = document.getElementById('captionInput').value.trim();
   const viewOnce = document.getElementById('viewOnceCheckbox').checked;
 
-  // Data Cloudinary (ganti dengan punya kamu)
-  const CLOUD_NAME    = "davgb7tjm";           // ← ganti dengan cloud name kamu
-  const UPLOAD_PRESET = "sanz-chat";           // ← ganti dengan upload preset kamu
+  const CLOUD_NAME    = "davgb7tjm";      
+  const UPLOAD_PRESET = "sanz-chat";  
 
   const formData = new FormData();
   formData.append("file", selectedFile);
   formData.append("upload_preset", UPLOAD_PRESET);
 
-  // Optional: tambah metadata kalau perlu (misal folder, tags, dll)
-  // formData.append("folder", "sanz-chat-images");
-  // formData.append("tags", "chat,view-once");
-
   try {
-    // Tampilkan indikator loading
+
     showToast("Sedang mengirim...");
 
     const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
@@ -1248,19 +527,16 @@ async function sendFile() {
       throw new Error("Tidak mendapatkan URL gambar dari Cloudinary");
     }
 
-    // Ambil URL yang aman (https)
     const imageUrl = data.secure_url || data.url;
 
-    // Tampilkan dulu di chat sendiri (optimistic UI)
     addMsg({
       type: 'file',
       fileUrl: imageUrl,
       caption: caption || undefined,
       viewOnce: viewOnce,
-      fromName: window.userData?.name || "Anonim"   // penting untuk modal "Foto dari ..."
+      fromName: window.userData?.name || "Anonim" 
     }, "me");
 
-    // Kirim ke server (akan diforward ke partner)
     socket.emit("message", {
       type: 'file',
       fileUrl: imageUrl,
@@ -1269,17 +545,15 @@ async function sendFile() {
       fromName: window.userData?.name || "Anonim"
     });
 
-    showToast(viewOnce ? "Foto sekali lihat terkirim!" : "Gambar terkirim!");
+    showToast(viewOnce ? "Gambar terkirim!" : "Gambar terkirim!");
 
   } catch (err) {
     console.error("Gagal upload ke Cloudinary:", err);
     showAlert("Gagal mengirim gambar:\n" + (err.message || "Cek koneksi"));
   }
 
-  // Reset semuanya setelah selesai (sukses atau gagal)
   cancelFilePreview();
 
-  // Optional: reset input file supaya bisa upload file yang sama lagi
   document.getElementById('fileInput').value = '';
 }
 
@@ -1294,20 +568,19 @@ function cancelFilePreview() {
 function setupInteractionForDelete(msgElement, actionElement) {
   let pressTimer;
 
-  // Long-press (mobile)
   msgElement.addEventListener('touchstart', () => {
     pressTimer = setTimeout(() => {
       msgElement.classList.add('long-press');
       actionElement.style.display = 'block';
-    }, 500); // 0.5 detik untuk long press
+    }, 500); 
   });
 
   msgElement.addEventListener('touchend', () => {
     clearTimeout(pressTimer);
     setTimeout(() => {
       msgElement.classList.remove('long-press');
-      actionElement.style.display = 'none'; // hilang setelah lepas
-    }, 3000); // sedikit delay agar tidak langsung hilang
+      actionElement.style.display = 'none'; 
+    }, 3000); 
   });
 
   msgElement.addEventListener('touchmove', () => {
@@ -1316,11 +589,8 @@ function setupInteractionForDelete(msgElement, actionElement) {
     actionElement.style.display = 'none';
   });
 
-  // Hover (desktop) sudah ditangani oleh CSS :hover
-
-  // Opsional: Klik sekali untuk toggle tombol hapus (bisa dihapus jika tidak mau)
   msgElement.addEventListener('click', (e) => {
-    // Jangan toggle jika klik tombol hapus itu sendiri
+
     if (e.target === actionElement || actionElement.contains(e.target)) return;
 
     if (msgElement.classList.contains('clicked')) {
@@ -1340,24 +610,22 @@ function deleteForEveryone(msgId) {
   }
 
   socket.emit('delete-for-everyone', { msgId });
-  updateMsgAsDeleted(msgId); // update tampilan sendiri langsung
+  updateMsgAsDeleted(msgId); 
 }
 
 function updateMsgAsDeleted(msgId) {
   const msgDiv = messagesMap[msgId];
   if (msgDiv) {
-    // Ganti isi bubble jadi pesan dihapus
+
     const bubble = msgDiv.querySelector('.bubble');
     if (bubble) {
       bubble.innerHTML = 'Pesan ini telah dihapus';
       bubble.className = 'bubble deleted-msg';
     }
 
-    // Hapus tombol aksi kalau ada
     const action = msgDiv.querySelector('.msg-action');
     if (action) action.remove();
 
-    // Optional: tambah timestamp baru kalau mau
     const timeEl = msgDiv.querySelector('.time');
     if (timeEl) timeEl.textContent = timeNow();
   } else {
@@ -1380,15 +648,8 @@ socket.on("matched", p => {
 });
 
 socket.on("message", data => {
-  // data sekarang diharapkan punya .id dari server
-  // Tentukan side: kalau dari partner → "other", kalau dari diri sendiri → "me"
-  // Untuk sementara pakai logic sederhana (nanti bisa diperbaiki kalau server kirim field "from")
-  const side = data.fromMe ? "me" : "other";   // kalau server belum kirim "fromMe", ganti logika
-
+  const side = data.fromMe ? "me" : "other";  
   addMsg(data, side);
-
-  // Optional: kalau ini pesan balasan dari server untuk pesan kita, bisa update temp ID
-  // tapi untuk sekarang cukup seperti ini
 });
 
 socket.on("delete-for-everyone", ({ msgId }) => updateMsgAsDeleted(msgId));
@@ -1414,15 +675,14 @@ socket.on("partner-left", () => {
   document.getElementById("refreshBtn").style.display = "block";
 });
 
-// ─── Video Call ──────────────────────────────────
 async function startMedia() {
   try {
     localStream = await navigator.mediaDevices.getUserMedia({
       video: {
         facingMode: "user",
-        width: { ideal: 640 },          // atau 1280 untuk lebih tajam
-        height: { ideal: 480 },         // atau 720
-        aspectRatio: { ideal: 4/3 }     // atau 16/9 — tes mana yang cocok di HP kamu
+        width: { ideal: 640 },          
+        height: { ideal: 480 },       
+        aspectRatio: { ideal: 4/3 }     
       },
       audio: true
     });
@@ -1456,16 +716,16 @@ function createPeer() {
 
   pc.oniceconnectionstatechange = () => {
     console.log("ICE state:", pc.iceConnectionState);
-    checkSignal();  // ← tambahkan ini
+    checkSignal();  
   };
 
   pc.onconnectionstatechange = () => {
     console.log("Connection state:", pc.connectionState);
-    checkSignal();  // ← tambahkan ini (paling penting)
+    checkSignal();  
 
     if (pc.connectionState === "connected") {
       console.log("WebRTC CONNECTED!");
-      // Bisa tambah toast kalau mau: showToast("Koneksi video stabil!");
+
     } else if (pc.connectionState === "failed" || pc.connectionState === "disconnected") {
       console.log("WebRTC gagal/terputus");
       showToast("Koneksi video terputus");
@@ -1512,7 +772,6 @@ async function updateLatency() {
     let rtt = -1;
     let foundAny = false;
 
-    // 1. Cari di candidate-pair (yang paling akurat & umum)
     stats.forEach(report => {
       if (report.type === 'candidate-pair') {
         if (report.currentRoundTripTime !== undefined && report.currentRoundTripTime > 0) {
@@ -1525,7 +784,6 @@ async function updateLatency() {
       }
     });
 
-    // 2. Jika tidak ada, fallback ke candidate-pair lain (tanpa filter nominated)
     if (rtt === -1) {
       stats.forEach(report => {
         if (report.type === 'candidate-pair' && report.currentRoundTripTime > 0) {
@@ -1536,7 +794,6 @@ async function updateLatency() {
       });
     }
 
-    // 3. Jika masih tidak ada, coba dari remote-inbound-rtp (kadang lebih reliable di beberapa browser)
     if (rtt === -1) {
       stats.forEach(report => {
         if (report.type === 'remote-inbound-rtp' && report.roundTripTime > 0) {
@@ -1555,7 +812,6 @@ async function updateLatency() {
       netLeft.textContent = `${lastRTT} ms`;
       console.log("[LATENCY] Sukses update UI →", lastRTT, "ms");
 
-      // Warna berdasarkan latency
       netPill.style.color = '#34d399';
       netPill.style.borderColor = '#0f9d6e';
 
@@ -1596,12 +852,12 @@ function checkSignal() {
   if (state === "connected") {
     console.log("[NET] CONNECTED → tampilkan pill & mulai latency");
     netPill.style.display = "flex";
-    updateLatency();  // panggil sekali langsung
+    updateLatency();  
     clearInterval(window.latencyInterval);
     window.latencyInterval = setInterval(() => {
       console.log("[NET] Update latency interval...");
       updateLatency();
-    }, 2000);  // naikkan ke 2 detik biar tidak terlalu spam log
+    }, 1000);  
   } else if (state === "connecting" || state === "new") {
     console.log("[NET] Connecting → tampilkan 'Connecting...'");
     netPill.style.display = "flex";
@@ -1621,19 +877,17 @@ async function callUser() {
     return;
   }
 
-  // Tampilkan modal waiting SEBELUM mulai proses call
   const waitingModal = document.getElementById("waitingModal");
   const waitingText = document.getElementById("waitingText");
   waitingText.textContent = "Menunggu " + (partner.name || "partner") + " menerima panggilan...";
   waitingModal.style.display = "grid";
 
-  // Optional: tambah timeout kalau partner lama tidak jawab (misal 45 detik)
   window.callTm = setTimeout(() => {
     if (waitingModal.style.display === "grid") {
       waitingModal.style.display = "none";
-      showAlert("Panggilan tidak dijawab. Coba lagi nanti.");
+      showAlert("Panggilan tidak dijawab.");
     }
-  }, 45000);
+  }, 30000);
 
   try {
     const hasMedia = await startMedia();
@@ -1649,7 +903,7 @@ async function callUser() {
       console.log("Track ditambahkan:", track.kind);
     });
 
-    socket.emit("call-user");  // kirim sinyal ke server
+    socket.emit("call-user");  
 
   } catch (err) {
     console.error("Gagal memulai panggilan:", err);
@@ -1666,10 +920,8 @@ socket.on("incoming-call", d => {
 socket.on("call-accepted", async () => {
   console.log("[CALLER] Panggilan diterima oleh partner");
 
-  // Hentikan timeout waiting (kalau masih jalan)
   clearTimeout(window.callTm);
 
-  // Sembunyikan modal waiting
   const waitingModal = document.getElementById("waitingModal");
   if (waitingModal) {
     waitingModal.style.display = "none";
@@ -1678,7 +930,7 @@ socket.on("call-accepted", async () => {
   callPending = false;
 
   try {
-    // Pastikan media lokal sudah aktif (kalau belum, mulai sekarang)
+
     if (!localStream) {
       const hasMedia = await startMedia();
       if (!hasMedia) {
@@ -1687,42 +939,33 @@ socket.on("call-accepted", async () => {
       }
     }
 
-    // Buat atau reset peer connection
     createPeer();
 
-    // Tambahkan semua track lokal ke peer connection
     localStream.getTracks().forEach(track => {
       pc.addTrack(track, localStream);
       console.log("[CALLER] Track ditambahkan ke pc setelah accepted:", track.kind);
     });
 
-    // Buat dan kirim offer (SDP) ke partner
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
     socket.emit("offer", offer);
     console.log("[CALLER] Offer dikirim setelah accepted");
 
-    // Tampilkan layar video call
     document.getElementById("videoScreen").style.display = "flex";
     document.getElementById("callName").textContent = partner?.name || "Partner";
 
-    // Reset layout video (local di PIP, remote di full)
     resetVideoLayout();
-
-    // Mulai pantau koneksi & latency (penting agar ms muncul)
     checkSignal();
 
-    // Optional: tampilkan toast konfirmasi
     showToast("Menghubungkan...");
 
   } catch (err) {
     console.error("[CALLER] Error setelah call-accepted:", err);
     showAlert("Gagal menghubungkan video call: " + err.message);
 
-    // Cleanup kalau gagal
     if (waitingModal) waitingModal.style.display = "none";
     document.getElementById("videoScreen").style.display = "none";
-    endCall(); // panggil fungsi cleanup
+    endCall(); 
   }
 });
 
@@ -1761,15 +1004,13 @@ async function acceptCall() {
   const hasMedia = await startMedia();
   if (!hasMedia) return;
 
-  createPeer();  // Buat peer connection baru
+  createPeer();  
 
-  // Tambahkan track lokal (audio + video) ke peer connection
   localStream.getTracks().forEach(track => {
     pc.addTrack(track, localStream);
-    console.log("Track lokal ditambahkan ke pc:", track.kind); // untuk debug
+    console.log("Track lokal ditambahkan ke pc:", track.kind); 
   });
 
-  // Yang paling penting: buat dan kirim OFFER dari penerima panggilan
   try {
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
@@ -1781,14 +1022,11 @@ async function acceptCall() {
     return;
   }
 
-  // Tetap beri tahu server bahwa panggilan diterima
   socket.emit("accept-call");
 
-  // Tampilkan layar video call
   document.getElementById("videoScreen").style.display = "flex";
   document.getElementById("callName").textContent = partner?.name || "Partner";
 
-  // Optional: reset layout agar local video di PIP, remote di full
   resetVideoLayout();
 }
 
@@ -1816,7 +1054,6 @@ function endCall() {
 
 socket.on("end-call", endCall);
 
-// ─── PIP Swap ────────────────────────────────────
 document.getElementById("localVideo").onclick = function() {
   const local  = document.getElementById("localVideo");
   const remote = document.getElementById("remoteVideo");
@@ -1829,9 +1066,6 @@ document.getElementById("localVideo").onclick = function() {
     remote.classList.remove("full");
     remote.classList.add("pip");
 
-    
-
-    showToast("Layar kamu jadi besar");
   } else {
     local.classList.remove("full");
     local.classList.add("pip");
@@ -1841,14 +1075,12 @@ document.getElementById("localVideo").onclick = function() {
     local.style.transform  = isFront ? "scaleX(-1)" : "none";
     remote.style.transform = "none";
 
-    showToast("Kembali ke mode normal");
   }
 
   local.style.zIndex  = isPipSwapped ? "5"  : "10";
   remote.style.zIndex = isPipSwapped ? "10" : "5";
 };
 
-// ─── Camera Switch ───────────────────────────────
 async function switchCamera() {
   if (!localStream) {
     showAlert("Kamera belum aktif");
@@ -1856,53 +1088,42 @@ async function switchCamera() {
   }
 
   try {
-    // 1. Matikan track video lama (penting untuk release hardware)
+
     const oldVideoTrack = localStream.getVideoTracks()[0];
     if (oldVideoTrack) {
-      oldVideoTrack.stop();                    // hentikan track lama
-      localStream.removeTrack(oldVideoTrack);  // hapus dari stream
+      oldVideoTrack.stop();           
+      localStream.removeTrack(oldVideoTrack); 
     }
 
-    // 2. Tentukan mode kamera baru
     const mode = isFront ? "environment" : "user";
-    isFront = !isFront;  // toggle status
+    isFront = !isFront; 
 
-    // 3. Constraint resolusi SAMA untuk depan & belakang (mencegah zoom/ubah ukuran)
     const newConstraints = {
       video: {
-        facingMode: { exact: mode },           // paksa mode yang diinginkan
-        width: { ideal: 640 },                 // atau 1280 kalau mau lebih tajam
-        height: { ideal: 480 },                // atau 720
-        aspectRatio: { ideal: 4/3 },           // 4:3 portrait (cocok selfie), atau ganti 16/9
+        facingMode: { exact: mode },          
+        width: { ideal: 640 },              
+        height: { ideal: 480 },             
+        aspectRatio: { ideal: 4/3 },           
         frameRate: { ideal: 30 }
       }
     };
 
-    // 4. Request stream baru
     const newStream = await navigator.mediaDevices.getUserMedia(newConstraints);
 
-    // 5. Ambil track video baru
     const newVideoTrack = newStream.getVideoTracks()[0];
     if (!newVideoTrack) {
       throw new Error("Tidak ada track video baru");
     }
 
-    // 6. Tambahkan track baru ke localStream
     localStream.addTrack(newVideoTrack);
 
-    // 7. Update tampilan video lokal
     const localVideo = document.getElementById("localVideo");
     
-    // Force unload dulu lalu load ulang (mencegah glitch/stuck di beberapa HP)
     localVideo.srcObject = null;
-    await new Promise(resolve => setTimeout(resolve, 50)); // delay kecil
+    await new Promise(resolve => setTimeout(resolve, 50)); 
     localVideo.srcObject = localStream;
     localVideo.play().catch(e => console.log("Play error:", e));
 
-    // 8. TIDAK perlu set transform lagi di sini
-    //    Karena CSS sudah pakai !important untuk mirror permanen di semua kamera
-
-    // 9. Ganti track di peer connection (agar partner juga lihat perubahan)
     if (pc) {
       const videoSender = pc.getSenders().find(s => s.track && s.track.kind === "video");
       if (videoSender) {
@@ -1919,7 +1140,6 @@ async function switchCamera() {
     console.error("Switch camera gagal:", err.name, err.message);
     showAlert("Gagal ganti kamera: " + (err.message || "Coba restart halaman"));
 
-    // Rollback status kalau gagal
     isFront = !isFront;
   }
 }
@@ -1928,13 +1148,10 @@ function closeViewOnce() {
   const modal = document.getElementById('viewOnceModal');
   const img = document.getElementById('voFullImage');
   
-  // Sembunyikan modal dulu
   modal.style.display = 'none';
   
-  // Reset src gambar supaya tidak cache / membebani memory
   img.src = '';
   
-  // Optional: reset header supaya bersih
   document.getElementById('voHeader').textContent = 'Foto dari ...';
 }
 
@@ -1954,7 +1171,6 @@ function toggleCam() {
   socket.emit("media-status", { cam: tr.enabled });
 }
 
-// ─── Utils ───────────────────────────────────────
 function openProfile() {
   if (!partner) return;
   document.getElementById("profileContent").innerHTML = `
