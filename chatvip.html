@@ -989,14 +989,19 @@ function createPeer() {
 
   pc.oniceconnectionstatechange = () => {
     console.log("ICE state:", pc.iceConnectionState);
+    checkSignal();  // ← tambahkan ini
   };
 
   pc.onconnectionstatechange = () => {
     console.log("Connection state:", pc.connectionState);
+    checkSignal();  // ← tambahkan ini (paling penting)
+
     if (pc.connectionState === "connected") {
       console.log("WebRTC CONNECTED!");
+      // Bisa tambah toast kalau mau: showToast("Koneksi video stabil!");
     } else if (pc.connectionState === "failed" || pc.connectionState === "disconnected") {
       console.log("WebRTC gagal/terputus");
+      showToast("Koneksi video terputus");
     }
   };
 
@@ -1004,6 +1009,7 @@ function createPeer() {
     console.log("Menerima track remote!");
     const rv = document.getElementById("remoteVideo");
     rv.srcObject = e.streams[0];
+    rv.play().catch(err => console.log("Auto-play error:", err));
   };
 
   return pc;
@@ -1081,21 +1087,26 @@ async function updateLatency() {
 }
 
 function checkSignal() {
-  if (!pc) return;
+  if (!pc) {
+    document.getElementById("netStatus").style.display = "none";
+    return;
+  }
+
   const state = pc.connectionState;
   const netPill = document.getElementById("netStatus");
 
   if (state === "connected") {
-    netPill.style.display = "flex";
-    updateLatency();
+    netPill.style.display = "flex";           // ← ini yang bikin pill muncul!
+    updateLatency();                          // update pertama kali
     clearInterval(window.latencyInterval);
-    window.latencyInterval = setInterval(updateLatency, 1200);
-  } else if (state === "connecting") {
+    window.latencyInterval = setInterval(updateLatency, 1500); // update setiap 1.5 detik
+  } else if (state === "connecting" || state === "new") {
     netPill.style.display = "flex";
-    document.getElementById("netLeft").textContent = "— ms";
+    document.getElementById("netLeft").textContent = "Connecting...";
   } else {
     netPill.style.display = "none";
     clearInterval(window.latencyInterval);
+    document.getElementById("netLeft").textContent = "— ms";
     lastRTT = 0;
   }
 }
@@ -1149,21 +1160,66 @@ socket.on("incoming-call", d => {
 });
 
 socket.on("call-accepted", async () => {
+  console.log("[CALLER] Panggilan diterima oleh partner");
+
+  // Hentikan timeout waiting (kalau masih jalan)
   clearTimeout(window.callTm);
-  document.getElementById("waitingModal").style.display = "none";
+
+  // Sembunyikan modal waiting
+  const waitingModal = document.getElementById("waitingModal");
+  if (waitingModal) {
+    waitingModal.style.display = "none";
+  }
+
   callPending = false;
 
-  await startMedia();
-  createPeer();
-  localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
+  try {
+    // Pastikan media lokal sudah aktif (kalau belum, mulai sekarang)
+    if (!localStream) {
+      const hasMedia = await startMedia();
+      if (!hasMedia) {
+        showAlert("Gagal mengakses kamera/mikrofon setelah panggilan diterima");
+        return;
+      }
+    }
 
-  const offer = await pc.createOffer();
-  await pc.setLocalDescription(offer);
-  socket.emit("offer", offer);
+    // Buat atau reset peer connection
+    createPeer();
 
-  resetVideoLayout();
-  document.getElementById("videoScreen").style.display = "flex";
-  document.getElementById("callName").textContent = partner.name;
+    // Tambahkan semua track lokal ke peer connection
+    localStream.getTracks().forEach(track => {
+      pc.addTrack(track, localStream);
+      console.log("[CALLER] Track ditambahkan ke pc setelah accepted:", track.kind);
+    });
+
+    // Buat dan kirim offer (SDP) ke partner
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+    socket.emit("offer", offer);
+    console.log("[CALLER] Offer dikirim setelah accepted");
+
+    // Tampilkan layar video call
+    document.getElementById("videoScreen").style.display = "flex";
+    document.getElementById("callName").textContent = partner?.name || "Partner";
+
+    // Reset layout video (local di PIP, remote di full)
+    resetVideoLayout();
+
+    // Mulai pantau koneksi & latency (penting agar ms muncul)
+    checkSignal();
+
+    // Optional: tampilkan toast konfirmasi
+    showToast("Panggilan diterima! Menghubungkan video...");
+
+  } catch (err) {
+    console.error("[CALLER] Error setelah call-accepted:", err);
+    showAlert("Gagal menghubungkan video call: " + err.message);
+
+    // Cleanup kalau gagal
+    if (waitingModal) waitingModal.style.display = "none";
+    document.getElementById("videoScreen").style.display = "none";
+    endCall(); // panggil fungsi cleanup
+  }
 });
 
 function resetVideoLayout() {
