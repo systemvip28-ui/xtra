@@ -733,6 +733,31 @@ let messagesMap = {}; // Map pesan berdasarkan ID untuk delete
 
 const ice = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
 
+socket.on('message-confirmed', ({ id }) => {
+  console.log('Pesan dikonfirmasi, ID:', id);
+  // Cari pesan terakhir dari "me" yang belum punya ID, lalu update
+  const messages = document.querySelectorAll('.msg.me');
+  const lastMsg = messages[messages.length - 1];
+  if (lastMsg && !lastMsg.dataset.msgId.startsWith('temp-')) {
+    // Sudah punya ID, skip
+    return;
+  }
+
+  // Update dataset dan messagesMap
+  lastMsg.dataset.msgId = id;
+  messagesMap[id] = lastMsg;
+  messagesMap[lastMsg.dataset.msgId] = undefined; // hapus temp
+
+  // Tampilkan tombol hapus kalau belum ada
+  if (!lastMsg.querySelector('.msg-action')) {
+    const action = document.createElement('div');
+    action.className = 'msg-action';
+    action.textContent = 'Hapus untuk semua';
+    action.onclick = () => deleteForEveryone(id);
+    lastMsg.appendChild(action);
+  }
+});
+
 function showToast(msg) {
   const t = document.getElementById("actionToast");
   t.textContent = msg;
@@ -805,7 +830,6 @@ function addMsg(data, side, time = timeNow()) {
                </div>`;
     if (data.viewOnce) {
       div.classList.add('view-once');
-      // Optional: auto hapus setelah dilihat (bisa diatur di server nanti)
     }
   } else if (data.type === 'deleted') {
     content = `<div class="bubble deleted-msg">Pesan ini telah dihapus</div>`;
@@ -816,12 +840,20 @@ function addMsg(data, side, time = timeNow()) {
     <div class="time">${time}</div>
   `;
 
-  // Tombol "Hapus untuk semua" hanya muncul kalau pesan sudah punya ID server DAN dari saya
-  if (data.id && side === 'me') {
+  // ── PERUBAHAN UTAMA ──
+  // Tombol hapus muncul di SEMUA pesan dari "me" (optimistic UI)
+  if (side === 'me') {
     const action = document.createElement('div');
     action.className = 'msg-action';
     action.textContent = 'Hapus untuk semua';
-    action.onclick = () => deleteForEveryone(data.id);
+    action.onclick = () => {
+      const msgId = div.dataset.msgId;
+      if (!msgId || msgId.startsWith('temp-')) {
+        showToast("Pesan belum terkirim sepenuhnya ke server. Coba lagi sebentar.");
+        return;
+      }
+      deleteForEveryone(msgId);
+    };
     div.appendChild(action);
     setupLongPress(div, action);
   }
@@ -829,7 +861,7 @@ function addMsg(data, side, time = timeNow()) {
   document.getElementById("messages").appendChild(div);
   div.scrollIntoView({ behavior: "smooth", block: "end" });
 
-  return div;  // optional, biar bisa di-track kalau perlu
+  return div;
 }
 
 function timeNow() {
