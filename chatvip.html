@@ -339,7 +339,9 @@
       position: relative;
       background: #000;
     }
-
+video {
+  transform: scaleX(-1) !important;
+}
     video {
       width: 100%;
       height: 100%;
@@ -347,11 +349,13 @@
       transition: all 0.4s ease;
     }
 /* Mirror semua video seperti cermin (local + remote) */
-#localVideo,
-#remoteVideo {
-  transform: scaleX(-1) !important;   /* flip horizontal seperti melihat cermin */
+video#localVideo,
+video#remoteVideo,
+#localVideo.pip, #localVideo.full,
+#remoteVideo.pip, #remoteVideo.full {
+  transform: scaleX(-1) !important;
 }
-    /* PIP (picture-in-picture) style - KONSISTEN di semua kondisi */
+
     #localVideo.pip,
     #remoteVideo.pip {
       position: absolute;
@@ -960,51 +964,68 @@ function previewFile() {
   }
 }
 
-function sendFile() {
-  if (!selectedFile || !partner) return;
+async function sendFile() {
+  if (!selectedFile || !partner) {
+    showAlert("Tidak ada file atau partner");
+    return;
+  }
 
-  const caption = document.getElementById('captionInput').value.trim();
-  const viewOnce = document.getElementById('viewOnceCheckbox').checked;
+  const caption   = document.getElementById('captionInput').value.trim();
+  const viewOnce  = document.getElementById('viewOnceCheckbox').checked;
+
+  // GANTI DENGAN PUNYA KAMU
+  const CLOUD_NAME     = "davgb7tjm";      // contoh: "dabc123xyz"
+  const UPLOAD_PRESET  = "sanz-chat";   // contoh: "chat_sanz_unsigned"
 
   const formData = new FormData();
-  formData.append('file', selectedFile);
+  formData.append("file", selectedFile);
+  formData.append("upload_preset", UPLOAD_PRESET);
 
-  fetch('/upload', {
-    method: 'POST',
-    body: formData
-  })
-  .then(async res => {
-    if (!res.ok) {
-      const errText = await res.text();
-      throw new Error(`Upload gagal: ${res.status} - ${errText.substring(0, 150)}`);
+  try {
+    showToast("Sedang mengupload gambar...");
+
+    const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
+      method: "POST",
+      body: formData
+    });
+
+    if (!response.ok) {
+      const errData = await response.json();
+      throw new Error(errData.error?.message || `HTTP ${response.status}`);
     }
 
-    const data = await res.json();
-    if (!data.url) {
-      throw new Error('Server tidak mengembalikan URL file');
+    const data = await response.json();
+
+    if (!data.secure_url) {
+      throw new Error("Tidak mendapatkan URL dari Cloudinary");
     }
 
-    // Tampilkan dulu di layar sendiri (optimistic)
+    const imageUrl = data.secure_url;  // atau data.url kalau mau http
+
+    // Tampilkan di chat sendiri dulu (optimistic UI)
     addMsg({
       type: 'file',
-      fileUrl: data.url,
+      fileUrl: imageUrl,
       caption,
       viewOnce
     }, "me");
 
-    // Kirim ke server tanpa ID client
+    // Kirim ke partner via socket (server kamu tinggal forward)
     socket.emit("message", {
       type: 'file',
-      fileUrl: data.url,
+      fileUrl: imageUrl,
       caption,
       viewOnce
     });
-  })
-  .catch(err => {
-    console.error('Gagal upload file:', err);
-    showAlert('Gagal mengirim file: ' + err.message);
-  });
 
+    showToast("Gambar berhasil terkirim!");
+
+  } catch (err) {
+    console.error("Upload ke Cloudinary gagal:", err);
+    showAlert("Gagal upload gambar: " + (err.message || "Cek koneksi / preset"));
+  }
+
+  // Reset preview & modal
   cancelFilePreview();
 }
 
@@ -1110,12 +1131,16 @@ socket.on("partner-left", () => {
 async function startMedia() {
   try {
     localStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: "user" },
+      video: {
+        facingMode: "user",
+        width: { ideal: 640 },          // atau 1280 untuk lebih tajam
+        height: { ideal: 480 },         // atau 720
+        aspectRatio: { ideal: 4/3 }     // atau 16/9 — tes mana yang cocok di HP kamu
+      },
       audio: true
     });
     const localVideo = document.getElementById("localVideo");
     localVideo.srcObject = localStream;
-    localVideo.style.transform = "scaleX(-1)";   // awal depan → mirror
     localVideo.play().catch(e => console.log("Play error:", e));
   } catch (err) {
     console.error("getUserMedia gagal:", err);
@@ -1425,8 +1450,7 @@ function resetVideoLayout() {
   remote.classList.remove("pip");
   remote.classList.add("full");
 
-  local.style.transform  = isFront ? "scaleX(-1)" : "none";  // ikuti status kamera
-  remote.style.transform = "none";  // remote jangan mirror
+  
 
   local.style.zIndex = "10";
   remote.style.zIndex = "5";
@@ -1518,8 +1542,7 @@ document.getElementById("localVideo").onclick = function() {
     remote.classList.remove("full");
     remote.classList.add("pip");
 
-    local.style.transform  = isFront ? "scaleX(-1)" : "none";
-    remote.style.transform = "none";
+    
 
     showToast("Layar kamu jadi besar");
   } else {
@@ -1546,50 +1569,58 @@ async function switchCamera() {
   }
 
   try {
-    // 1. Matikan track video lama
+    // 1. Matikan track video lama (penting untuk release hardware)
     const oldVideoTrack = localStream.getVideoTracks()[0];
     if (oldVideoTrack) {
-      oldVideoTrack.stop();
-      localStream.removeTrack(oldVideoTrack);
+      oldVideoTrack.stop();                    // hentikan track lama
+      localStream.removeTrack(oldVideoTrack);  // hapus dari stream
     }
 
-    // 2. Tentukan mode baru
+    // 2. Tentukan mode kamera baru
     const mode = isFront ? "environment" : "user";
-    isFront = !isFront;
+    isFront = !isFront;  // toggle status
 
-    // 3. Request stream baru
+    // 3. Constraint resolusi SAMA untuk depan & belakang (mencegah zoom/ubah ukuran)
     const newConstraints = {
       video: {
-        facingMode: { exact: mode },
-        width: { ideal: 480 },
-        height: { ideal: 640 },
+        facingMode: { exact: mode },           // paksa mode yang diinginkan
+        width: { ideal: 640 },                 // atau 1280 kalau mau lebih tajam
+        height: { ideal: 480 },                // atau 720
+        aspectRatio: { ideal: 4/3 },           // 4:3 portrait (cocok selfie), atau ganti 16/9
         frameRate: { ideal: 30 }
       }
     };
 
+    // 4. Request stream baru
     const newStream = await navigator.mediaDevices.getUserMedia(newConstraints);
 
-    // 4. Ambil track baru
+    // 5. Ambil track video baru
     const newVideoTrack = newStream.getVideoTracks()[0];
-    if (!newVideoTrack) throw new Error("Tidak ada track video baru");
+    if (!newVideoTrack) {
+      throw new Error("Tidak ada track video baru");
+    }
 
-    // 5. Tambahkan ke localStream
+    // 6. Tambahkan track baru ke localStream
     localStream.addTrack(newVideoTrack);
 
-    // 6. Update tampilan lokal
+    // 7. Update tampilan video lokal
     const localVideo = document.getElementById("localVideo");
+    
+    // Force unload dulu lalu load ulang (mencegah glitch/stuck di beberapa HP)
+    localVideo.srcObject = null;
+    await new Promise(resolve => setTimeout(resolve, 50)); // delay kecil
     localVideo.srcObject = localStream;
     localVideo.play().catch(e => console.log("Play error:", e));
 
-    // 7. Mirror hanya kalau kamera depan (INI TEMPATNYA!)
-    localVideo.style.transform = isFront ? "scaleX(-1)" : "none";
+    // 8. TIDAK perlu set transform lagi di sini
+    //    Karena CSS sudah pakai !important untuk mirror permanen di semua kamera
 
-    // 8. Ganti track di peer connection
+    // 9. Ganti track di peer connection (agar partner juga lihat perubahan)
     if (pc) {
       const videoSender = pc.getSenders().find(s => s.track && s.track.kind === "video");
       if (videoSender) {
         await videoSender.replaceTrack(newVideoTrack);
-        console.log("Track video berhasil diganti");
+        console.log("Track video berhasil diganti di peer connection");
       } else {
         console.warn("Tidak menemukan video sender");
       }
@@ -1598,9 +1629,11 @@ async function switchCamera() {
     showToast(`Kamera ${isFront ? "depan" : "belakang"} aktif`);
 
   } catch (err) {
-    console.error("Switch camera gagal:", err);
+    console.error("Switch camera gagal:", err.name, err.message);
     showAlert("Gagal ganti kamera: " + (err.message || "Coba restart halaman"));
-    isFront = !isFront; // rollback kalau gagal
+
+    // Rollback status kalau gagal
+    isFront = !isFront;
   }
 }
 
